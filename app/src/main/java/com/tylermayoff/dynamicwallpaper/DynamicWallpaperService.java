@@ -1,12 +1,20 @@
 package com.tylermayoff.dynamicwallpaper;
 
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
+
+import java.io.File;
+import java.util.LinkedList;
 
 public class DynamicWallpaperService extends WallpaperService {
 
@@ -28,7 +36,17 @@ public class DynamicWallpaperService extends WallpaperService {
         private int width;
         private boolean visible = true;
 
+        private SharedPreferences sharedPreferences;
+
+        private String themePath;
+        private LinkedList<Bitmap> images;
+
         public DynamicWallpaperEngine() {
+            images = new LinkedList<>();
+            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            themePath = sharedPreferences.getString("themePath", "");
+            getImages();
+
             handler.post(drawRunner);
         }
 
@@ -54,24 +72,22 @@ public class DynamicWallpaperService extends WallpaperService {
             // Do nothing
         }
 
-        private void draw(){
+        private void draw() {
             SurfaceHolder holder = getSurfaceHolder();
             Canvas canvas = null;
+            if (images.size() == 0) {
+                getImages();
+            }
+
             try {
                 canvas = holder.lockCanvas();
                 if (canvas != null) {
-                    Paint paint = new Paint();
-                    paint.setAntiAlias(true);
-                    paint.setColor(Color.WHITE);
-                    paint.setStyle(Paint.Style.STROKE);
-                    paint.setStrokeJoin(Paint.Join.ROUND);
-                    paint.setStrokeWidth(10f);
+                    if (images.size() == 0)
+                        return;
 
-                    float widthQuater = width / 4;
-                    float heightQuater = height / 4;
-
-                    canvas.drawRect(widthQuater, height - heightQuater,
-                            width - widthQuater, heightQuater, paint);
+                    int width = images.get(0).getWidth();
+                    int height = images.get(0).getHeight();
+                    canvas.drawBitmap(images.get(0), new Rect(0, 0, width, height), new Rect(0,0,width,height), null);
                 }
             }
             finally {
@@ -80,6 +96,26 @@ public class DynamicWallpaperService extends WallpaperService {
 
             handler.removeCallbacks(drawRunner);
             if(visible) handler.postDelayed(drawRunner, 5000);
+        }
+
+        void getImages() {
+            if (themePath == "")
+                themePath = sharedPreferences.getString("themePath", "");
+            if (themePath == "")
+                return;
+
+
+                File dir = new File(themePath);
+            File[] files = dir.listFiles();
+            if (files.length == 0)
+                return;
+
+            images = new LinkedList<>();
+            for (File f: files) {
+                Bitmap img = BitmapFactory.decodeFile(f.getAbsolutePath());
+                if (img != null)
+                    images.add(img);
+            }
         }
     }
 }
