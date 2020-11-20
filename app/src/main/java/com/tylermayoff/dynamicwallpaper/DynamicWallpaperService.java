@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Handler;
@@ -14,6 +15,8 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedList;
 
 public class DynamicWallpaperService extends WallpaperService {
@@ -32,9 +35,11 @@ public class DynamicWallpaperService extends WallpaperService {
             }
         };
 
-        private int height;
-        private int width;
+        private int scrHeight;
+        private int scrWidth;
         private boolean visible = true;
+
+        private int index;
 
         private SharedPreferences sharedPreferences;
 
@@ -61,8 +66,8 @@ public class DynamicWallpaperService extends WallpaperService {
 
         @Override
         public void onSurfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            this.width = width;
-            this.height = height;
+            this.scrWidth = width;
+            this.scrHeight = height;
 
             super.onSurfaceChanged(holder, format, width, height);
         }
@@ -85,9 +90,24 @@ public class DynamicWallpaperService extends WallpaperService {
                     if (images.size() == 0)
                         return;
 
-                    int width = images.get(0).getWidth();
-                    int height = images.get(0).getHeight();
-                    canvas.drawBitmap(images.get(0), new Rect(0, 0, width, height), new Rect(0,0,width,height), null);
+                    int originalWidth = images.get(index).getWidth();
+                    int originalHeight = images.get(index).getHeight();
+
+                    float scale = scrHeight / originalHeight * 2;
+
+                    float xTranslation = (scrWidth - originalWidth * scale) / 2.0f;
+                    float yTranslation = (scrHeight - originalHeight * scale) / 2.0f;
+
+                    Matrix transformation = new Matrix();
+                    transformation.postTranslate(xTranslation, yTranslation);
+                    transformation.preScale(scale, scale);
+
+                    Paint p = new Paint();
+                    p.setFilterBitmap(true);
+                    canvas.drawBitmap(images.get(index), transformation, p);
+                    index ++;
+                    if (index >= images.size())
+                        index = 0;
                 }
             }
             finally {
@@ -109,6 +129,12 @@ public class DynamicWallpaperService extends WallpaperService {
             File[] files = dir.listFiles();
             if (files.length == 0)
                 return;
+            Arrays.sort(files, new Comparator<File>() {
+                @Override
+                public int compare(File o1, File o2) {
+                    return o1.getName().compareTo(o2.getName());
+                }
+            });
 
             images = new LinkedList<>();
             for (File f: files) {
