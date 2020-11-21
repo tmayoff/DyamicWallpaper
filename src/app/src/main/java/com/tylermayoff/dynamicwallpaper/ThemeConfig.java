@@ -92,7 +92,7 @@ public class ThemeConfig {
 
     public Calendar GetNextTime (int index) {
         index += 1;
-        if (index > displayChangeTimes.size())
+        if (index >= displayChangeTimes.size())
             index = 0;
         return displayChangeTimes.get(index);
     }

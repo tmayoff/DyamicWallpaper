@@ -2,8 +2,10 @@ package com.tylermayoff.dynamicwallpaper;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -17,20 +19,27 @@ import java.util.Calendar;
 
 public class DynamicWallpaperService extends WallpaperService {
 
-    private final int ALARM_INTENT = 1;
+    private DynamicWallpaperEngine engine;
 
-    DynamicWallpaperEngine engine;
+    @Override
+    public void onCreate() {
+        super.onCreate();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (startId == ALARM_INTENT) {
-            engine.NextImage();
+        if (intent != null) {
+            String action = intent.getAction();
+            if (action == "NEXT" && engine != null) {
+                engine.NextImage();
+            }
         }
-        else {
-            boolean load = !intent.getStringExtra("load").isEmpty();
-            if (load && engine != null)
-                engine.themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
-        }
+
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -40,7 +49,7 @@ public class DynamicWallpaperService extends WallpaperService {
         return engine;
     }
 
-    private class DynamicWallpaperEngine extends Engine {
+    public class DynamicWallpaperEngine extends Engine {
 
         public ThemeConfig themeConfig;
 
@@ -73,8 +82,10 @@ public class DynamicWallpaperService extends WallpaperService {
 
             // TODO finish alarm
             alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            Intent intent = new Intent(context, DynamicWallpaperEngine.class);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+            Intent intent = new Intent(context, DynamicWallpaperService.class);
+            intent.putExtra("startId", 5);
+            intent.setAction("NEXT");
+            PendingIntent pendingIntent = PendingIntent.getService(context, 0, intent, 0);
 
             // Setup next background change
             currentIndex = themeConfig.GetLastTimeIndex();
@@ -137,9 +148,12 @@ public class DynamicWallpaperService extends WallpaperService {
                     alphaPaint.setFilterBitmap(true);
                     canvas.drawBitmap(themeConfig.images.get(currentIndex), transformation, alphaPaint);
 
-                    if (currentAlpha >= 255) {
+                    if (255 - currentAlpha < 10) {
+                        // Finished drawing
                         currentAlpha = 0;
                         changingImage = false;
+
+                        handler.removeCallbacks(drawRunner);
                     }
                 }
             }
@@ -153,16 +167,23 @@ public class DynamicWallpaperService extends WallpaperService {
             }
         }
 
-        private void NextImage () {
+        public void NextImage () {
             currentIndex++;
+            if (currentIndex >= themeConfig.images.size())
+                currentIndex = 0;
 
-            Intent intent = new Intent(context, DynamicWallpaperEngine.class);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+            changingImage = true;
+
+            // Setup next background change
+            Intent intent = new Intent(context, DynamicWallpaperService.class);
+            intent.setAction("NEXT");
+            PendingIntent pendingIntent = PendingIntent.getService(context, 0, intent, 0);
 
             // Setup next background change
             Calendar nextAlarm = themeConfig.GetNextTime(currentIndex);
             alarmManager.set(AlarmManager.RTC, nextAlarm.getTimeInMillis(), pendingIntent);
-            changingImage = true;
+
+            handler.post(drawRunner);
         }
     }
 }

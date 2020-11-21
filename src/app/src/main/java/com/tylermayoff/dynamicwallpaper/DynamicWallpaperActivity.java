@@ -15,12 +15,16 @@ import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
 
 public class DynamicWallpaperActivity extends AppCompatActivity {
 
@@ -96,6 +100,11 @@ public class DynamicWallpaperActivity extends AppCompatActivity {
 
     private void InitUI () {
         FolderBtn = findViewById(R.id.Folder_Button);
+
+        TextView nextChangeTxt = findViewById(R.id.NextChange_TextView);
+        Calendar nextTime = themeConfig.GetNextTime(themeConfig.GetLastTimeIndex());
+        SimpleDateFormat formatter = new SimpleDateFormat("kk:mm");
+        nextChangeTxt.setText(formatter.format(nextTime.getTime()));
 
         if (imagesLoaded)
             FolderBtn.setText("Theme Loaded");
