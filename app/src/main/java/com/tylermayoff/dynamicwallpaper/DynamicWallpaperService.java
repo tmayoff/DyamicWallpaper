@@ -1,67 +1,89 @@
 package com.tylermayoff.dynamicwallpaper;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.service.wallpaper.WallpaperService;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedList;
 
 public class DynamicWallpaperService extends WallpaperService {
 
+    DynamicWallpaperEngine engine;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+
+        boolean load = !intent.getStringExtra("load").isEmpty();
+        if (load && engine != null) {
+            engine.themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
+        }
+
+        return super.onStartCommand(intent, flags, startId);
+    }
+
     @Override
     public Engine onCreateEngine() {
-        return new DynamicWallpaperEngine();
+        engine = new DynamicWallpaperEngine();
+        return engine;
     }
 
     private class DynamicWallpaperEngine extends Engine {
+
+        public ThemeConfig themeConfig;
+
         private final Handler handler = new Handler();
-        private final Runnable drawRunner = new Runnable() {
-            @Override
-            public void run() {
-                draw();
-            }
-        };
+        private final Runnable drawRunner = () -> draw();
 
         private int scrHeight;
         private int scrWidth;
+        private int currentIndex = 0;
         private boolean visible = true;
 
-        private int index;
+        // Animation Rules
+        private int FADE_MILLI = 500;
+        private int FADE_STEP = 5;
+        private int ALPHA_STEP = 255 / (FADE_MILLI / FADE_STEP);
 
-        private SharedPreferences sharedPreferences;
-
-        private String themePath;
-        private LinkedList<Bitmap> images;
+        private Paint alphaPaint = new Paint();
+        private int currentAlpha = 0;
+        private boolean changingImage = true;
 
         public DynamicWallpaperEngine() {
-            images = new LinkedList<>();
-            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            themePath = sharedPreferences.getString("themePath", "");
-            getImages();
+            if (themeConfig == null)
+                themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
 
             handler.post(drawRunner);
         }
 
         @Override
         public void onVisibilityChanged(boolean visible) {
-                this.visible = visible;
-                if(visible)
-                    handler.post(drawRunner);
-                else
-                    handler.removeCallbacks(drawRunner);
+            this.visible = visible;
+            if(visible)
+                handler.post(drawRunner);
+            else
+                handler.removeCallbacks(drawRunner);
         }
 
         @Override
@@ -78,20 +100,19 @@ public class DynamicWallpaperService extends WallpaperService {
         }
 
         private void draw() {
+
             SurfaceHolder holder = getSurfaceHolder();
             Canvas canvas = null;
-            if (images.size() == 0) {
-                getImages();
-            }
+            if (!changingImage) return;
 
             try {
                 canvas = holder.lockCanvas();
                 if (canvas != null) {
-                    if (images.size() == 0)
+                    if (themeConfig.images.size() == 0)
                         return;
 
-                    int originalWidth = images.get(index).getWidth();
-                    int originalHeight = images.get(index).getHeight();
+                    int originalWidth = themeConfig.images.get(currentIndex).getWidth();
+                    int originalHeight = themeConfig.images.get(currentIndex).getHeight();
 
                     float scale = scrHeight / originalHeight * 2;
 
@@ -102,12 +123,16 @@ public class DynamicWallpaperService extends WallpaperService {
                     transformation.postTranslate(xTranslation, yTranslation);
                     transformation.preScale(scale, scale);
 
-                    Paint p = new Paint();
-                    p.setFilterBitmap(true);
-                    canvas.drawBitmap(images.get(index), transformation, p);
-                    index ++;
-                    if (index >= images.size())
-                        index = 0;
+                    alphaPaint.setAlpha(currentAlpha);
+                    currentAlpha += ALPHA_STEP;
+                    alphaPaint.setFilterBitmap(true);
+                    canvas.drawBitmap(themeConfig.images.get(currentIndex), transformation, alphaPaint);
+
+                    if (currentAlpha >= 255) {
+                        currentAlpha = 0;
+                        currentIndex++;
+                        if (currentIndex >= themeConfig.images.size()) currentIndex = 0;
+                    }
                 }
             }
             finally {
@@ -115,32 +140,8 @@ public class DynamicWallpaperService extends WallpaperService {
             }
 
             handler.removeCallbacks(drawRunner);
-            if(visible) handler.postDelayed(drawRunner, 5000);
-        }
-
-        void getImages() {
-            if (themePath == "")
-                themePath = sharedPreferences.getString("themePath", "");
-            if (themePath == "")
-                return;
-
-
-                File dir = new File(themePath);
-            File[] files = dir.listFiles();
-            if (files.length == 0)
-                return;
-            Arrays.sort(files, new Comparator<File>() {
-                @Override
-                public int compare(File o1, File o2) {
-                    return o1.getName().compareTo(o2.getName());
-                }
-            });
-
-            images = new LinkedList<>();
-            for (File f: files) {
-                Bitmap img = BitmapFactory.decodeFile(f.getAbsolutePath());
-                if (img != null)
-                    images.add(img);
+            if (visible) {
+                handler.postDelayed(drawRunner, FADE_STEP);
             }
         }
     }

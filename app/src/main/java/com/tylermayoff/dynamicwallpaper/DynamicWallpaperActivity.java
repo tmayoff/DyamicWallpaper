@@ -6,114 +6,51 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.TimePickerDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TimePicker;
+
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.LinkedList;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class DynamicWallpaperActivity extends AppCompatActivity {
 
     public final int FOLDER_REQUEST = 1;
-    public final int PERMISSION_REQUEST = 2;
 
-    SharedPreferences sharedPreferences;
-    SharedPreferences.Editor prefEditor;
+    // UI Declarations
+    Button FolderBtn;
 
-    ImageView previewImage;
+    File themeFolder;
+    boolean imagesLoaded;
 
-    Button folderBtn;
-    Button sunriseTimeBtn;
-    Button sunsetTimeBtn;
-
-    String themePath;
-
-    Calendar sunriseTime;
-    Calendar sunsetTime;
-
-    LinkedList<Bitmap> images;
+    ThemeConfig themeConfig;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dynamic_wallpaper);
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        prefEditor = sharedPreferences.edit();
+        themeFolder = new File(getFilesDir() + "/theme");
+        File[] images = themeFolder.listFiles();
+        imagesLoaded = images != null && images.length > 0;
+        if (imagesLoaded) {
+            themeConfig = new ThemeConfig(themeFolder);
+            Intent intent = new Intent(this, DynamicWallpaperService.class);
+            intent.putExtra("load", "load");
+            startService(intent);
+        }
 
-        themePath = sharedPreferences.getString("themePath", "");
-
-        previewImage = findViewById(R.id.Preview_ImageView);
-
-        sunriseTimeBtn = findViewById(R.id.Sunrise_Button);
-        sunsetTimeBtn = findViewById(R.id.Sunset_Button);
-
-        folderBtn = findViewById(R.id.Folder_Button);
-        if (themePath != "")
-            folderBtn.setText(themePath);
-
-        getImagePreview();
-
-        folderBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (ContextCompat.checkSelfPermission(getBaseContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-                    startActivityForResult(intent, FOLDER_REQUEST);
-                } else {
-                    requestPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST);
-                }
-            }
-        });
-
-        sunriseTimeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Calendar c = Calendar.getInstance();
-
-                TimePickerDialog t = new TimePickerDialog(v.getContext(), new TimePickerDialog.OnTimeSetListener() {
-                    @Override
-                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                        sunriseTime = new GregorianCalendar(0, 0, 0, hourOfDay, minute, 0);
-                        sunriseTimeBtn.setText(sunriseTime.get(Calendar.HOUR_OF_DAY) + ":" + sunriseTime.get(Calendar.MINUTE));
-                    }
-                }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false);
-                t.show();
-            }
-        });
-
-        sunsetTimeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Calendar c = Calendar.getInstance();
-
-                TimePickerDialog t = new TimePickerDialog(v.getContext(), new TimePickerDialog.OnTimeSetListener() {
-                    @Override
-                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                        sunsetTime = new GregorianCalendar(0, 0, 0, hourOfDay, minute, 0);
-                        sunsetTimeBtn.setText(sunsetTime.get(Calendar.HOUR_OF_DAY) + ":" + sunsetTime.get(Calendar.MINUTE));
-                    }
-                }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false);
-                t.show();
-            }
-        });
+        InitUI();
+        InitListeners();
     }
 
     @Override
@@ -121,41 +58,65 @@ public class DynamicWallpaperActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == Activity.RESULT_OK) {
-            switch (requestCode) {
-                case FOLDER_REQUEST:
-                    Uri uri = data.getData();
-                    Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri,
-                            DocumentsContract.getTreeDocumentId(uri));
-                    themePath = ASFUriHelp.getPath(this, docUri);
-                    prefEditor.putString("themePath", themePath);
-                    prefEditor.apply();
-                    folderBtn.setText(themePath);
+            if (requestCode == FOLDER_REQUEST) {// Get destination folder
+                File dstDir = new File(getFilesDir() + "/theme");
+                try {
+                    FileUtils.deleteDirectory(dstDir);
+                } catch (Exception e) {
+                }
+                dstDir = new File(getFilesDir() + "/theme");
 
-                    getImagePreview();
-                    break;
-                case PERMISSION_REQUEST:
-                    Log.d("Intent", data.getDataString());
-                    break;
+                Uri uri = data.getData();
+                String dirID = DocumentsContract.getTreeDocumentId(uri);
+                Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, dirID);
+                Cursor c = null;
+                try {
+                    c = getContentResolver().query(childrenUri, null, null, null, null);
+                    while (c.moveToNext()) {
+
+                        String id = c.getString(c.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID));
+                        String name = c.getString(c.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
+                        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, id);
+
+                        File newFile = new File(dstDir, name);
+                        InputStream is = getContentResolver().openInputStream(docUri);
+                        FileUtils.copyInputStreamToFile(is, newFile);
+                    }
+                    c.close();
+                } catch (IOException e) {
+
+                }
             }
         }
     }
 
-    void getImagePreview() {
-        if (themePath == "")
-            return;
+    private boolean checkPermissions () {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+    }
 
-        File dir = new File(themePath);
-        File[] files = dir.listFiles();
-        if (files.length == 0)
-            return;
+    private void InitUI () {
+        FolderBtn = findViewById(R.id.Folder_Button);
 
-        images = new LinkedList<>();
-        for (File f: files) {
-            Bitmap img = BitmapFactory.decodeFile(f.getAbsolutePath());
-            if (img != null)
-                images.add(img);
-        }
+        if (imagesLoaded)
+            FolderBtn.setText("Theme Loaded");
+        else
+            FolderBtn.setText("Select Folder");
 
-        previewImage.setImageBitmap(images.get(0));
+    }
+
+    private void InitListeners() {
+        FolderBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (checkPermissions()) {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                    startActivityForResult(intent, FOLDER_REQUEST);
+                } else {
+
+                }
+            }
+        });
     }
 }
