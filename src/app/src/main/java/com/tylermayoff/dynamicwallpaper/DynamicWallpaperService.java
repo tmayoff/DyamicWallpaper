@@ -1,5 +1,8 @@
 package com.tylermayoff.dynamicwallpaper;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -10,23 +13,30 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 
 import java.io.File;
+import java.util.Calendar;
 
 public class DynamicWallpaperService extends WallpaperService {
+
+    private final int ALARM_INTENT = 1;
 
     DynamicWallpaperEngine engine;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        boolean load = !intent.getStringExtra("load").isEmpty();
-        if (load && engine != null)
-            engine.themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
-
+        if (startId == ALARM_INTENT) {
+            engine.NextImage();
+        }
+        else {
+            boolean load = !intent.getStringExtra("load").isEmpty();
+            if (load && engine != null)
+                engine.themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public Engine onCreateEngine() {
-        engine = new DynamicWallpaperEngine();
+        engine = new DynamicWallpaperEngine(this);
         return engine;
     }
 
@@ -51,9 +61,27 @@ public class DynamicWallpaperService extends WallpaperService {
         private int currentAlpha = 0;
         private boolean changingImage = true;
 
-        public DynamicWallpaperEngine() {
+        private AlarmManager alarmManager;
+
+        Context context;
+
+        public DynamicWallpaperEngine(Context c) {
+            context = c;
+
             if (themeConfig == null)
                 themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
+
+            // TODO finish alarm
+            alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            Intent intent = new Intent(context, DynamicWallpaperEngine.class);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+
+            // Setup next background change
+            currentIndex = themeConfig.GetLastTimeIndex();
+            Calendar nextAlarm = themeConfig.GetNextTime(currentIndex);
+            alarmManager.set(AlarmManager.RTC, nextAlarm.getTimeInMillis(), pendingIntent);
+
+            changingImage = true;
 
             handler.post(drawRunner);
         }
@@ -111,8 +139,7 @@ public class DynamicWallpaperService extends WallpaperService {
 
                     if (currentAlpha >= 255) {
                         currentAlpha = 0;
-                        currentIndex++;
-                        if (currentIndex >= themeConfig.images.size()) currentIndex = 0;
+                        changingImage = false;
                     }
                 }
             }
@@ -124,6 +151,18 @@ public class DynamicWallpaperService extends WallpaperService {
             if (visible) {
                 handler.postDelayed(drawRunner, FADE_STEP);
             }
+        }
+
+        private void NextImage () {
+            currentIndex++;
+
+            Intent intent = new Intent(context, DynamicWallpaperEngine.class);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, 0);
+
+            // Setup next background change
+            Calendar nextAlarm = themeConfig.GetNextTime(currentIndex);
+            alarmManager.set(AlarmManager.RTC, nextAlarm.getTimeInMillis(), pendingIntent);
+            changingImage = true;
         }
     }
 }

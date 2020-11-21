@@ -1,5 +1,6 @@
 package com.tylermayoff.dynamicwallpaper;
 
+import android.app.AlarmManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
@@ -17,6 +18,8 @@ import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,6 +36,7 @@ public class ThemeConfig {
         this.images = new LinkedList<>();
         displayChangeTimes = new LinkedList<>();
 
+
         File[] images = themeFolder.listFiles(pathname -> {
             try {
                 String mimeType = Files.probeContentType(pathname.toPath());
@@ -43,6 +47,8 @@ public class ThemeConfig {
 
             return false;
         });
+        if (images == null)
+            return;
 
         Arrays.sort(images, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 
@@ -52,15 +58,42 @@ public class ThemeConfig {
         }
 
         int timeIncrements = 24 * 60 / images.length;
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = new GregorianCalendar();
         calendar.roll(Calendar.MINUTE, true);
         calendar.roll(Calendar.HOUR_OF_DAY, true);
-        calendar.set(0, 0, 0, 0, 0);
+        calendar.set(0, 0, 0, 0, 0, 0);
         for (int i = 0; i < images.length; i++) {
-            displayChangeTimes.add(calendar);
+            displayChangeTimes.add((Calendar) calendar.clone());
             calendar.add(Calendar.MINUTE, timeIncrements);
         }
+    }
 
-        Log.d("Time", displayChangeTimes.get(0).getTime().toString());
+    public int GetLastTimeIndex () {
+        Calendar lastCal = displayChangeTimes.get(0);
+        Calendar now = Calendar.getInstance();
+
+        for(int i = 0;  i < displayChangeTimes.size(); i++) {
+            int nH = now.get(Calendar.HOUR_OF_DAY);
+            int h = displayChangeTimes.get(i).get(Calendar.HOUR_OF_DAY);
+            int lastH = lastCal.get(Calendar.HOUR_OF_DAY);
+
+            if (nH >= lastH && nH <= h)
+                return i;
+            lastCal = displayChangeTimes.get(i);
+        }
+
+        return 0;
+    }
+
+
+    public Calendar GetTime (int index) {
+        return displayChangeTimes.get(index);
+    }
+
+    public Calendar GetNextTime (int index) {
+        index += 1;
+        if (index > displayChangeTimes.size())
+            index = 0;
+        return displayChangeTimes.get(index);
     }
 }
