@@ -2,10 +2,8 @@ package com.tylermayoff.dynamicwallpaper;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -22,20 +20,12 @@ public class DynamicWallpaperService extends WallpaperService {
     private DynamicWallpaperEngine engine;
 
     @Override
-    public void onCreate() {
-        super.onCreate();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
-
-    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             String action = intent.getAction();
-            if (action == "NEXT" && engine != null) {
+            if (action == null) return super.onStartCommand(intent, flags, startId);
+
+            if (action.equals("NEXT") && engine != null) {
                 engine.NextImage();
             }
         }
@@ -58,7 +48,7 @@ public class DynamicWallpaperService extends WallpaperService {
 
         private int scrHeight;
         private int scrWidth;
-        private int currentIndex = 0;
+        private int currentIndex;
         private boolean visible = true;
 
         // Animation Rules
@@ -80,7 +70,6 @@ public class DynamicWallpaperService extends WallpaperService {
             if (themeConfig == null)
                 themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
 
-            // TODO finish alarm
             alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
             Intent intent = new Intent(context, DynamicWallpaperService.class);
             intent.putExtra("startId", 5);

@@ -7,13 +7,12 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
-import android.view.View;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -23,12 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 public class DynamicWallpaperActivity extends AppCompatActivity {
 
-    public final int FOLDER_REQUEST = 1;
+    public final int FOLDER_REQUEST = 5;
 
     // UI Declarations
     Button FolderBtn;
@@ -62,17 +60,22 @@ public class DynamicWallpaperActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == FOLDER_REQUEST) {// Get destination folder
-                File dstDir = new File(getFilesDir() + "/theme");
-                try {
-                    FileUtils.deleteDirectory(dstDir);
-                } catch (Exception e) {
-                }
-                dstDir = new File(getFilesDir() + "/theme");
-
+            if (requestCode == FOLDER_REQUEST) {
                 Uri uri = data.getData();
                 String dirID = DocumentsContract.getTreeDocumentId(uri);
+                String[] dirArr =  uri.getLastPathSegment().split("/");
+                String dirName = dirArr[dirArr.length - 1];
+
+                // Get destination folder
+                File dstDir = new File(getFilesDir() + "/theme" + dirName);
+                try {
+                    FileUtils.deleteDirectory(dstDir);
+                } catch (Exception e) { }
+                dstDir = new File(getFilesDir() + "/theme" + dirName);
+
+
                 Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, dirID);
+
                 Cursor c = null;
                 try {
                     c = getContentResolver().query(childrenUri, null, null, null, null);
@@ -101,10 +104,12 @@ public class DynamicWallpaperActivity extends AppCompatActivity {
     private void InitUI () {
         FolderBtn = findViewById(R.id.Folder_Button);
 
-        TextView nextChangeTxt = findViewById(R.id.NextChange_TextView);
-        Calendar nextTime = themeConfig.GetNextTime(themeConfig.GetLastTimeIndex());
-        SimpleDateFormat formatter = new SimpleDateFormat("kk:mm");
-        nextChangeTxt.setText(formatter.format(nextTime.getTime()));
+        if (themeConfig != null) {
+            TextView nextChangeTxt = findViewById(R.id.NextChange_TextView);
+            Calendar nextTime = themeConfig.GetNextTime(themeConfig.GetLastTimeIndex());
+            SimpleDateFormat formatter = new SimpleDateFormat("kk:mm");
+            nextChangeTxt.setText(formatter.format(nextTime.getTime()));
+        }
 
         if (imagesLoaded)
             FolderBtn.setText("Theme Loaded");
@@ -114,17 +119,14 @@ public class DynamicWallpaperActivity extends AppCompatActivity {
     }
 
     private void InitListeners() {
-        FolderBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (checkPermissions()) {
-                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        FolderBtn.setOnClickListener(v -> {
+            if (checkPermissions()) {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-                    startActivityForResult(intent, FOLDER_REQUEST);
-                } else {
-
-                }
+                startActivityForResult(intent, FOLDER_REQUEST);
+            } else {
+                // TODO Request permission
             }
         });
     }

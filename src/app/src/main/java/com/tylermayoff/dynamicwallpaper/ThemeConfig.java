@@ -1,38 +1,24 @@
 package com.tylermayoff.dynamicwallpaper;
 
-import android.app.AlarmManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Log;
-
-import androidx.core.content.MimeTypeFilter;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ThemeConfig {
 
-    List<Bitmap> images;
-
-    private File themeFolder;
+    public List<Bitmap> images;
 
     private List<Calendar> displayChangeTimes;
 
     public ThemeConfig (File themeFolder) {
-        this.themeFolder = themeFolder;
         this.images = new LinkedList<>();
         displayChangeTimes = new LinkedList<>();
 
@@ -52,8 +38,8 @@ public class ThemeConfig {
 
         Arrays.sort(images, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 
-        for (int i = 0; i < images.length; i++) {
-            Bitmap b = BitmapFactory.decodeFile(images[i].getAbsolutePath());
+        for (File image : images) {
+            Bitmap b = BitmapFactory.decodeFile(image.getAbsolutePath());
             this.images.add(b);
         }
 
@@ -83,11 +69,6 @@ public class ThemeConfig {
         }
 
         return 0;
-    }
-
-
-    public Calendar GetTime (int index) {
-        return displayChangeTimes.get(index);
     }
 
     public Calendar GetNextTime (int index) {
