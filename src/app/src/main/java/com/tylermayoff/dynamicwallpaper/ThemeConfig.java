@@ -27,7 +27,6 @@ public class ThemeConfig {
         this.images = new LinkedList<>();
         displayChangeTimes = new LinkedList<>();
 
-
         File[] images = themeFolder.listFiles(pathname -> {
             try {
                 String mimeType = Files.probeContentType(pathname.toPath());
