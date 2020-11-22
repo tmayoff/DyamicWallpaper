@@ -5,11 +5,15 @@
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
 
-    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_main">Dynamic Wallpaper</string>
     <string name="title_activity_dynamic_wallpaper">DynamicWallpaperActivity</string>
 
     <string name="tab_text_wallpaper_settings">Wallpaper Settings</string>
     <string name="tab_text_change_wallpaper">Change Wallpaper</string>
+
+    <!-- Shared Preferences -->
+    <string name="preferences_file_key">com.tylermayoff.dynamicwallpaper.prefs</string>
+    <string name="preferences_active_theme">active_theme</string>
 
     <!-- Change Wallpaper string  -->
     <string name="preview_image_view_text_placeholder">Theme Preview</string>

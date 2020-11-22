@@ -42,6 +42,7 @@ public class ChangeWallpaper extends Fragment {
 
     private View root;
     private RecyclerView recyclerView;
+    private ThemeViewAdapter themeViewAdapter;
 
     ActivityResultLauncher<Uri> selectFolder = registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(), uri -> {
         String dirID = DocumentsContract.getTreeDocumentId(uri);
@@ -49,11 +50,11 @@ public class ChangeWallpaper extends Fragment {
         String dirName = dirArr[dirArr.length - 1];
 
         // Get destination folder
-        File dstDir = new File(getContext().getFilesDir() + "/theme" + dirName);
+        File dstDir = new File(getContext().getFilesDir() + "/theme/" + dirName);
         try {
             FileUtils.deleteDirectory(dstDir);
         } catch (Exception e) { }
-        dstDir = new File(getContext().getFilesDir() + "/theme" + dirName);
+        dstDir = new File(getContext().getFilesDir() + "/theme/" + dirName);
 
         Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, dirID);
 
@@ -74,16 +75,35 @@ public class ChangeWallpaper extends Fragment {
         } catch (IOException e) {
 
         }
+
+        UpdateNewThemes();
+    });
+
+    ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
+       if (isGranted) {
+           selectFolder.launch(null);
+       }
     });
 
     FileFilter ImageTypeFilter = pathname -> {
         try {
+
             String mimeType = Files.probeContentType(pathname.toPath());
             return mimeType.startsWith("image/");
         } catch (IOException e) {
             e.printStackTrace();
         }
         return false;
+    };
+
+    FileFilter NotContained = pathname -> {
+        for (Theme t: themeViewAdapter.themes) {
+            if (t.name.equals(pathname.getName())) {
+                return false;
+            }
+        }
+
+        return true;
     };
 
     public static ChangeWallpaper newInstance() {
@@ -101,28 +121,19 @@ public class ChangeWallpaper extends Fragment {
         // Inflate the layout for this fragment
         root = inflater.inflate(R.layout.fragment_change_wallpaper, container, false);
 
-
         List<Theme> themes = new LinkedList<>();
-        File dir = getContext().getFilesDir();
-        File[] themeFolders = dir.listFiles();
-        for (File theme : themeFolders) {
-            File[] images = theme.listFiles(ImageTypeFilter);
-            Random r = new Random();
-            int rImg = r.nextInt(images.length);
-            Bitmap img = BitmapFactory.decodeFile(images[rImg].getAbsolutePath());
-
-            themes.add(new Theme(theme.getName(), img));
-        }
 
 
-        // Adapter Settings
-        ThemeViewAdapter adapter = new ThemeViewAdapter(this.getContext(), themes);
+        // Recycler Settings
+        themeViewAdapter = new ThemeViewAdapter(this.getContext(), themes);
         LinearLayoutManager lm = new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false);
 
         recyclerView = root.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(lm);
-        recyclerView.setAdapter(adapter);
-        adapter.notifyDataSetChanged();
+        recyclerView.setAdapter(themeViewAdapter);
+        themeViewAdapter.notifyDataSetChanged();
+
+        UpdateNewThemes();
 
         FloatingActionButton AddThemeBtn = root.findViewById(R.id.floatingActionButton);
         AddThemeBtn.setOnClickListener(v -> {
@@ -130,11 +141,29 @@ public class ChangeWallpaper extends Fragment {
                 selectFolder.launch(null);
 
             } else {
-                // TODO Request permission
+                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
         });
 
         return root;
+    }
+
+    private void UpdateNewThemes () {
+        File dir = new File(getContext().getFilesDir() + "/theme");
+        File[] themeFolders = dir.listFiles(NotContained);
+        if (themeFolders == null) return;
+
+        for (File theme : themeFolders) {
+
+            File[] images = theme.listFiles(ImageTypeFilter);
+            Random r = new Random();
+            int rImg = r.nextInt(images.length);
+            Bitmap img = BitmapFactory.decodeFile(images[rImg].getAbsolutePath());
+
+            themeViewAdapter.themes.add(new Theme(theme.getName(), img));
+        }
+
+        themeViewAdapter.notifyDataSetChanged();
     }
 
     private boolean checkPermissions () {
