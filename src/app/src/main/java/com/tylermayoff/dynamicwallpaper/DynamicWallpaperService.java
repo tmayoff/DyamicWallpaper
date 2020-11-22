@@ -4,6 +4,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -15,6 +16,7 @@ import android.view.SurfaceHolder;
 import java.io.File;
 import java.util.Calendar;
 
+/*
 public class DynamicWallpaperService extends WallpaperService {
 
     private DynamicWallpaperEngine engine;
@@ -67,8 +69,11 @@ public class DynamicWallpaperService extends WallpaperService {
         public DynamicWallpaperEngine(Context c) {
             context = c;
 
-            if (themeConfig == null)
-                themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme"));
+            SharedPreferences sharedPreferences = getSharedPreferences(context.getString(R.string.preferences_file_key), Context.MODE_PRIVATE);
+            String activeTheme = sharedPreferences.getString(context.getString(R.string.preferences_active_theme), "");
+
+            if (themeConfig == null && !activeTheme.isEmpty())
+                themeConfig = new ThemeConfig(new File(getFilesDir() + "/theme/" + activeTheme));
 
             alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
             Intent intent = new Intent(context, DynamicWallpaperService.class);
@@ -91,8 +96,10 @@ public class DynamicWallpaperService extends WallpaperService {
             this.visible = visible;
             if(visible)
                 handler.post(drawRunner);
-            else
-                handler.removeCallbacks(drawRunner);
+            */
+/*else
+                handler.removeCallbacks(drawRunner);*//*
+
         }
 
         @Override
@@ -151,7 +158,7 @@ public class DynamicWallpaperService extends WallpaperService {
             }
 
             handler.removeCallbacks(drawRunner);
-            if (visible) {
+            if (visible && changingImage) {
                 handler.postDelayed(drawRunner, FADE_STEP);
             }
         }
@@ -176,3 +183,4 @@ public class DynamicWallpaperService extends WallpaperService {
         }
     }
 }
+*/

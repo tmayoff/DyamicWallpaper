@@ -36,7 +36,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-public class ChangeWallpaper extends Fragment {
+public class ChangeWallpaper extends UpdateableFragment {
 
     public ChangeWallpaper() { }
 
@@ -168,5 +168,10 @@ public class ChangeWallpaper extends Fragment {
 
     private boolean checkPermissions () {
         return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    @Override
+    public void update() {
+
     }
 }

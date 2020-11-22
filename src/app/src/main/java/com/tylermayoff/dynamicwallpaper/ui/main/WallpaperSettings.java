@@ -13,22 +13,19 @@ import android.widget.TextView;
 
 import com.tylermayoff.dynamicwallpaper.R;
 
-public class WallpaperSettings extends Fragment {
+public class WallpaperSettings extends UpdateableFragment {
 
     private View root;
+    private SharedPreferences sharedPreferences;
+
+    // UI
+    private TextView textView_ThemeName;
 
     public WallpaperSettings() { }
-
-    public static WallpaperSettings newInstance() {
-        WallpaperSettings fragment = new WallpaperSettings();
-        return fragment;
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-        }
     }
 
     @Override
@@ -38,14 +35,19 @@ public class WallpaperSettings extends Fragment {
         root = inflater.inflate(R.layout.fragment_wallpaper_settings, container, false);
 
         // Get Preferences
-        SharedPreferences sharedPreferences = getContext().getSharedPreferences(getContext().getString(R.string.preferences_file_key), Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        String themeName = sharedPreferences.getString(getContext().getString(R.string.preferences_active_theme), "");
+        sharedPreferences = getContext().getSharedPreferences(getContext().getString(R.string.preferences_file_key), Context.MODE_PRIVATE);
 
         // Setup UI
-        TextView themeName_TextView = root.findViewById(R.id.theme_name_TextView);
-        themeName_TextView.setText(themeName);
+        textView_ThemeName = root.findViewById(R.id.theme_name_TextView);
+
+        update();
 
         return root;
+    }
+
+    @Override
+    public void update() {
+        String themeName = sharedPreferences.getString(getContext().getString(R.string.preferences_active_theme), "");
+        textView_ThemeName.setText(themeName);
     }
 }

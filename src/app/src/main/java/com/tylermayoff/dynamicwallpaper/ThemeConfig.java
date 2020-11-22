@@ -1,5 +1,6 @@
 package com.tylermayoff.dynamicwallpaper;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
@@ -17,6 +18,10 @@ public class ThemeConfig {
     public List<Bitmap> images;
 
     private List<Calendar> displayChangeTimes;
+
+    public ThemeConfig (Context c, String themeName) {
+        this(new File(c.getFilesDir() + "/theme/" + themeName));
+    }
 
     public ThemeConfig (File themeFolder) {
         this.images = new LinkedList<>();

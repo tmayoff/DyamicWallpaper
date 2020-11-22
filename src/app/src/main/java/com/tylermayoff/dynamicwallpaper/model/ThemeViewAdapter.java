@@ -61,6 +61,7 @@ public class ThemeViewAdapter extends RecyclerView.Adapter<ThemeViewAdapter.Them
             // Listeners
             previewImg.setOnClickListener(view -> {
                 editor.putString(context.getString(R.string.preferences_active_theme), theme.name);
+                editor.apply();
                 Toast.makeText(context, "Set theme to " + theme.name, Toast.LENGTH_SHORT).show();
             });
         }
