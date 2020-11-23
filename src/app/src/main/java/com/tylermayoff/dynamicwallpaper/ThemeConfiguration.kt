@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.tylermayoff.dynamicwallpaper.util.CustomUtilities.*
 import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileFilter
@@ -14,12 +15,12 @@ import java.util.*
 class ThemeConfiguration() {
 
     private val imageFilter : FileFilter = FileFilter { pathname ->
-        var mimeType = Files.probeContentType(pathname.toPath())
+        val mimeType = Files.probeContentType(pathname.toPath())
         mimeType.startsWith("image/")
     }
 
     private val jsonFilter : FileFilter = FileFilter { pathname ->
-        var mimeType = Files.probeContentType(pathname.toPath())
+        val mimeType = Files.probeContentType(pathname.toPath())
         mimeType == "application/json"
     }
 
@@ -28,31 +29,31 @@ class ThemeConfiguration() {
     var usingSunsetSunriseTime : Boolean = false
 
     constructor(context: Context, themeName : String) : this() {
-        var themeDir : File = File(context.filesDir.absolutePath + "/theme/" + themeName)
+        val themeDir = File(context.filesDir.absolutePath + "/theme/" + themeName)
 
-        var imageFiles : Array<File>? = themeDir.listFiles(imageFilter)
+        val imageFiles : Array<File>? = themeDir.listFiles(imageFilter)
         if (imageFiles == null) return
 
         // TODO Sort not properly sorting
-        Arrays.sort(imageFiles) { f1, f2 -> f1.name.compareTo(f2.name) }
+        Arrays.sort(imageFiles) {f1, f2 -> compareNatural(f1.name, f2.name) }
 
         for (image : File in imageFiles) {
-            var b : Bitmap = BitmapFactory.decodeFile(image.absolutePath)
+            val b : Bitmap = BitmapFactory.decodeFile(image.absolutePath)
             images.add(b)
         }
 
         // Get theme.json configuration
-        var configFile : Array<File> = themeDir.listFiles(jsonFilter)
+        val configFile : Array<File> = themeDir.listFiles(jsonFilter)
         if (configFile.isNotEmpty()) {
-            var gson : Gson = GsonBuilder().create()
-            var jsonString : String = FileUtils.readFileToString(configFile[0], "UTF-8")
+            val gson : Gson = GsonBuilder().create()
+            val jsonString : String = FileUtils.readFileToString(configFile[0], "UTF-8")
             var conf: ThemeConfig = gson.fromJson(jsonString, ThemeConfig::class.java)
 
         }
 
         if (!usingSunsetSunriseTime) {
-            var timeIncrements = 24 * 60 / images.size
-            var startCal : Calendar = GregorianCalendar()
+            val timeIncrements = 24 * 60 / images.size
+            val startCal : Calendar = GregorianCalendar()
 
             startCal.roll(Calendar.MINUTE, true)
             startCal.roll(Calendar.HOUR_OF_DAY, true)
@@ -66,13 +67,16 @@ class ThemeConfiguration() {
 
     fun getCurrentTimeIntervalIndex () : Int {
         var lastCal = wallpaperChangeTimes[0]
-        var now = Calendar.getInstance()
+        val now = Calendar.getInstance()
+        // Clear data we don't need / can't use
+        now.set(Calendar.YEAR, 0)
+        now.set(Calendar.DAY_OF_MONTH, 0)
+        now.set(Calendar.MONTH, 0)
 
-        for (i in 1..wallpaperChangeTimes.size) {
-            var currentHour = now.get(Calendar.HOUR_OF_DAY)
-            var currentIndexHour = wallpaperChangeTimes[i].get(Calendar.HOUR_OF_DAY)
-            var lastIndexHour = lastCal.get(Calendar.HOUR_OF_DAY)
-            if (currentHour in lastIndexHour until currentIndexHour) {
+        for (i in 1 until wallpaperChangeTimes.size) {
+            val currentIndexTime = wallpaperChangeTimes[i]
+            val lastIndexTime = lastCal
+            if (now >= lastIndexTime && now <= currentIndexTime) {
                 return i - 1
             }
             lastCal = wallpaperChangeTimes[i]
@@ -82,8 +86,8 @@ class ThemeConfiguration() {
     }
 
     fun getNextTimeChange() : Calendar {
-        var lastIndex = getCurrentTimeIntervalIndex()
-        var index = (lastIndex + 1) % wallpaperChangeTimes.size
+        val lastIndex = getCurrentTimeIntervalIndex()
+        val index = (lastIndex + 1) % wallpaperChangeTimes.size
         return wallpaperChangeTimes[index]
     }
 
