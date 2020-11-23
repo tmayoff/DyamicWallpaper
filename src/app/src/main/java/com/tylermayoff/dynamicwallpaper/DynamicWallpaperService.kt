@@ -20,7 +20,7 @@ class DynamicWallpaperService : WallpaperService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent != null) {
             if (intent.action?.equals("NEXT_IMG")!!) {
-                engine.NextImage()
+                engine.nextImage()
             }
         }
 
@@ -32,18 +32,17 @@ class DynamicWallpaperService : WallpaperService() {
         return engine
     }
 
-    inner class DynamicWallpaperEngine(context: Context) : WallpaperService.Engine() {
+    inner class DynamicWallpaperEngine(private val context: Context) : WallpaperService.Engine() {
 
         private var sharedPreferences : SharedPreferences = getSharedPreferences(context.getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
 
-        private val context: Context = context
         private val show : Runnable = Runnable { show() }
         private val changeImage : Runnable = Runnable { changeImage() }
         private val handler : Handler = Handler(Looper.getMainLooper())
         private val alarmManager : AlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         // Theme Specifics
-        private var themeConfig: ThemeConfig
+        private var themeConfig: ThemeConfiguration
         private var activeThemeName : String
         private var currentImageIndex : Int
 
@@ -69,17 +68,17 @@ class DynamicWallpaperService : WallpaperService() {
                 // TODO Redirect to activity
             }
 
-            themeConfig = ThemeConfig(context, activeThemeName)
+            themeConfig = ThemeConfiguration(context, activeThemeName)
 
             // Setup background
-            currentImageIndex = themeConfig.GetLastTimeIndex()
+            currentImageIndex = themeConfig.getCurrentTimeIntervalIndex()
 
             // Setup alarm
             val intent = Intent(context, DynamicWallpaperEngine::class.java)
             intent.action = "NEXT_IMG"
             val pendingIntent : PendingIntent = PendingIntent.getService(context, 0, intent, 0)
 
-            val nextAlarm = themeConfig.GetNextTime(currentImageIndex)
+            val nextAlarm = themeConfig.getNextTimeChange()
             alarmManager.set(AlarmManager.RTC, nextAlarm.timeInMillis, pendingIntent)
 
             handler.post(changeImage)
@@ -94,7 +93,7 @@ class DynamicWallpaperService : WallpaperService() {
 
         override fun onVisibilityChanged(visible: Boolean) {
             if (visible){
-                currentImageIndex = themeConfig.GetLastTimeIndex()
+                currentImageIndex = themeConfig.getCurrentTimeIntervalIndex()
                 this.wallpaperIsVisible = visible
                 doneAnimating = true
                 handler.post(show)
@@ -105,7 +104,7 @@ class DynamicWallpaperService : WallpaperService() {
             super.onVisibilityChanged(visible)
         }
 
-        fun NextImage () {
+        fun nextImage () {
             currentImageIndex++
             if (currentImageIndex >= themeConfig.images.size)
                 currentImageIndex = 0
@@ -117,7 +116,7 @@ class DynamicWallpaperService : WallpaperService() {
             intent.action = "NEXT_IMG"
             val pendingIntent : PendingIntent = PendingIntent.getService(context, 0, intent, 0)
 
-            val nextAlarm = themeConfig.GetNextTime(currentImageIndex)
+            val nextAlarm = themeConfig.getNextTimeChange()
             alarmManager.set(AlarmManager.RTC, nextAlarm.timeInMillis, pendingIntent)
         }
 

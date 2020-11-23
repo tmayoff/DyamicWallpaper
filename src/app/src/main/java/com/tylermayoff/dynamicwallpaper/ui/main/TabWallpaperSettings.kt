@@ -13,14 +13,14 @@ import android.widget.TextView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.tylermayoff.dynamicwallpaper.DynamicWallpaperService
 import com.tylermayoff.dynamicwallpaper.R
-import com.tylermayoff.dynamicwallpaper.ThemeConfig
+import com.tylermayoff.dynamicwallpaper.ThemeConfiguration
 
 class TabWallpaperSettings : UpdateableFragment () {
 
     private lateinit var sharedPreferences : SharedPreferences
 
-    var activeTheme : String? = null
-    private lateinit var themeConfig : ThemeConfig
+    lateinit var activeTheme : String
+    private lateinit var themeConfig : ThemeConfiguration
 
     // UI
     private lateinit var textViewNextChange : TextView
@@ -31,7 +31,7 @@ class TabWallpaperSettings : UpdateableFragment () {
         val root = inflater.inflate(R.layout.fragment_wallpaper_settings, container, false)
 
         sharedPreferences = requireContext().getSharedPreferences(getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
-        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")
+        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
 
         // UI Initialization
         textViewNextChange = root.findViewById(R.id.textView_NextChange)
@@ -46,18 +46,18 @@ class TabWallpaperSettings : UpdateableFragment () {
         }
 
         // Get theme config
-        if (activeTheme != null || activeTheme != "")
-            themeConfig = ThemeConfig(requireContext(), activeTheme)
+        if (activeTheme != null || activeTheme != "") {
+            themeConfig = ThemeConfiguration(requireContext(), activeTheme)
+        }
 
         return root
     }
 
     override fun update() {
-        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")
-        textViewActiveTheme.setText(activeTheme)
+        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
+        textViewActiveTheme.text = activeTheme
 
-        var lastTimeIndex = themeConfig.GetLastTimeIndex()
-        var nextTime = themeConfig.GetNextTime(lastTimeIndex)
-        textViewNextChange.setText(nextTime.time.toString())
+        var nextTime = themeConfig.getNextTimeChange()
+        textViewNextChange.text = nextTime.time.toString()
     }
 }
