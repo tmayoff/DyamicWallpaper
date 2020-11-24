@@ -37,7 +37,7 @@ class TabDownloadWallpaper : UpdateableFragment() {
         swipeRefreshLayout.isRefreshing = true
 
         themes = arrayOf(DownloadableItem())
-        downloadsAdapter = DownloadsViewAdapter(themes)
+        downloadsAdapter = DownloadsViewAdapter(requireContext(), themes)
         val recyclerView: RecyclerView = root.findViewById(R.id.recyclerView_Downloads)
         val layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
 

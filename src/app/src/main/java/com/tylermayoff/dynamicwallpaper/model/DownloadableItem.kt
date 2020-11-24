@@ -5,7 +5,13 @@ import android.graphics.Bitmap
 class DownloadableItem {
 
     var name: String = ""
-    var git_url: String = ""
+    var themeUrl: String = ""
 
     var previewImage: Bitmap? = null
+
+    var _links: Link? = null
+
+    inner class Link {
+        var self: String = ""
+    }
 }

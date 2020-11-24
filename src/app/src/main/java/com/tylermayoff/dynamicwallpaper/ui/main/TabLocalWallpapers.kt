@@ -63,10 +63,15 @@ class TabLocalWallpapers : UpdateableFragment() {
 
         getLocalThemes()
 
+        // Events
+        swipeRefreshLayout.setOnRefreshListener { getLocalThemes() }
+
         return root
     }
 
     private fun getLocalThemes () {
+        swipeRefreshLayout.isRefreshing = true
+
         GlobalScope.launch {
             val dir = File(requireContext().filesDir.toString() + requireContext().getString(R.string.themes_relative_path))
             val themeFolders: Array<File>? = dir.listFiles(notContained)
@@ -75,18 +80,19 @@ class TabLocalWallpapers : UpdateableFragment() {
 
                 for (theme in themeFolders) {
                     val images: Array<File> = theme.listFiles(imageTypeFilter)!!
+                    if (images.isEmpty()) continue
                     val r = Random()
                     val rImg = r.nextInt(images.size)
                     val img = BitmapFactory.decodeFile(images[rImg].absolutePath)
                     tmpThemes.add(ThemeItem(theme.name, img))
                 }
                 themes = tmpThemes.toTypedArray()
+            }
 
-                activity?.runOnUiThread {
-                    themeViewAdapter.themes = themes
-                    themeViewAdapter.notifyDataSetChanged()
-                    swipeRefreshLayout.isRefreshing = false
-                }
+            activity?.runOnUiThread {
+                themeViewAdapter.themes = themes
+                themeViewAdapter.notifyDataSetChanged()
+                swipeRefreshLayout.isRefreshing = false
             }
         }
     }
