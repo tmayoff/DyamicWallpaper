@@ -13,7 +13,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
         var pageAdapter = TabsPageAdapter(this)
         var viewPager : ViewPager2 = findViewById(R.id.view_pager)
         var tabLayout : TabLayout = findViewById(R.id.tabs)
@@ -32,6 +31,7 @@ class MainActivity : AppCompatActivity() {
             currentTab.text = when (currentPosition) {
                 0 -> getString(R.string.tab_text_wallpaper_settings)
                 1 -> getString(R.string.tab_text_change_wallpaper)
+                2 -> getString(R.string.tab_text_download_wallpaper)
                 else -> "Missing String"
             }
         }.attach()

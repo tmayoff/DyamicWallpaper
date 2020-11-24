@@ -6,7 +6,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 
 class TabsPageAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter(fragmentActivity) {
 
-    private var tabsCount = 2
+    private var tabsCount = 3
     private var fragments = mutableListOf<Fragment>()
 
     override fun getItemCount(): Int {
@@ -18,14 +18,16 @@ class TabsPageAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter
         var frag : Fragment = when (position) {
             0 -> TabWallpaperSettings()
             1 -> ChangeWallpaper()
+            2 -> TabDownloadWallpaper()
             else -> TabWallpaperSettings()
         }
 
-        fragments.add(frag);
-        return frag;
+        fragments.add(frag)
+        return frag
     }
 
     fun updateFragment(position: Int) {
-        (fragments[position] as UpdateableFragment).update();
+        if (position >= fragments.size) return
+        (fragments[position] as UpdateableFragment).update()
     }
 }

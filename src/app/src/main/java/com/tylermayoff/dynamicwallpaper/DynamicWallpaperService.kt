@@ -78,7 +78,7 @@ class DynamicWallpaperService : WallpaperService() {
             intent.action = "NEXT_IMG"
             val pendingIntent : PendingIntent = PendingIntent.getService(context, 0, intent, 0)
 
-            val nextAlarm = themeConfig.getNextTimeChange()
+            val nextAlarm = themeConfig.getNextTimeChange()!!
             alarmManager.set(AlarmManager.RTC, nextAlarm.timeInMillis, pendingIntent)
 
             handler.post(changeImage)
@@ -116,7 +116,7 @@ class DynamicWallpaperService : WallpaperService() {
             intent.action = "NEXT_IMG"
             val pendingIntent : PendingIntent = PendingIntent.getService(context, 0, intent, 0)
 
-            val nextAlarm = themeConfig.getNextTimeChange()
+            val nextAlarm = themeConfig.getNextTimeChange()!!
             alarmManager.set(AlarmManager.RTC, nextAlarm.timeInMillis, pendingIntent)
         }
 
