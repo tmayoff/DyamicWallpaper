@@ -17,7 +17,7 @@ class TabsPageAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter
 
         var frag : Fragment = when (position) {
             0 -> TabWallpaperSettings()
-            1 -> ChangeWallpaper()
+            1 -> TabLocalWallpapers()
             2 -> TabDownloadWallpaper()
             else -> TabWallpaperSettings()
         }
