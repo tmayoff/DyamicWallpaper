@@ -42,12 +42,11 @@ class ThemeConfiguration() {
 
     @SuppressLint("MissingPermission")
     constructor(context: Context, themeName : String, useLocation: Boolean = false) : this() {
-        val themeDir = File(context.filesDir.absolutePath + "/theme/" + themeName)
+        val themeDir = File(context.filesDir.absolutePath + "/themes/" + themeName)
 
         val imageFiles : Array<File>? = themeDir.listFiles(imageFilter)
         if (imageFiles == null) return
 
-        // TODO Sort not properly sorting
         Arrays.sort(imageFiles) {f1, f2 -> compareNatural(f1.name, f2.name) }
 
         for (image : File in imageFiles) {

@@ -37,7 +37,7 @@ class GithubAPI {
                 for (i in 0 until response.length()) {
                     val gson = Gson()
                     val gitTheme: GithubThemeItem = gson.fromJson(response[i].toString(), GithubThemeItem::class.java)
-                    gitTheme.image = downloadImage(context, gitTheme.download_url)
+//                    gitTheme.image = downloadImage(context, gitTheme.download_url)
                     array.add(gitTheme)
                 }
 
@@ -47,7 +47,7 @@ class GithubAPI {
             }
         }
 
-        fun getThemesFromGithub (context: Context): Array<DownloadableItem>? {
+        fun getThemesFromGithub (context: Context): Array<GithubThemeItem>? {
             val requestQueue = VolleyRequestSingleton.getInstance(context).requestQueue
 
             val future: RequestFuture<JSONArray> = RequestFuture.newFuture()
@@ -57,21 +57,21 @@ class GithubAPI {
 
             return try {
                 val response = future.get(10, TimeUnit.SECONDS)
-                val gson: Gson = GsonBuilder().create()
-                val items: Array<DownloadableItem> = gson.fromJson(response.toString(), Array<DownloadableItem>::class.java)
-                for (item: DownloadableItem in items) {
-                    item.previewImage = getPreviewImage(context, "https://api.github.com/repos/tmayoff/DyamicWallpaper/contents/" + item.name + "?ref=downloads")
+                val items: ArrayList<GithubThemeItem> = arrayListOf()
+                for (i in 0 until response.length()) {
+                    val item: JSONObject = response.get(i) as JSONObject
+                    val themeItem = getThemeContent(context, item["name"].toString(), "https://api.github.com/repos/tmayoff/DyamicWallpaper/contents/" + item["name"].toString() + "?ref=downloads")
+                    if (themeItem != null)
+                        items.add(themeItem)
                 }
-
-                items
-
+                items.toTypedArray()
             } catch (e: Exception) {
                 Log.d("Github API", e.message!!)
                 null
             }
         }
 
-        fun getPreviewImage (context: Context, gitUrl: String): Bitmap? {
+        private fun getThemeContent (context: Context, themeName: String, gitUrl: String): GithubThemeItem? {
             val requestQueue = VolleyRequestSingleton.getInstance(context).requestQueue
 
             // Get image list
@@ -81,15 +81,29 @@ class GithubAPI {
 
             return try {
                 val res = future.get(10, TimeUnit.SECONDS)
+                var downloadUrl = ""
+                var imageDownloadUrl = ""
+                for (i in 0 until res.length()) {
+                    val file: JSONObject = res.get(i) as JSONObject
+                    if (file["name"].toString().startsWith("Theme_Preview")) {
+                        imageDownloadUrl = file["download_url"].toString()
+                        continue
+                    } else {
+                        downloadUrl = file["download_url"].toString()
+                    }
+                }
+
                 val previewIndex = res.length() / 2
                 val preview: JSONObject = res[previewIndex] as JSONObject
                 downloadImage(context, preview["download_url"].toString())
+
+                return GithubThemeItem(themeName, downloadUrl, downloadImage(context, imageDownloadUrl))
             } catch (e: Exception) {
                 null
             }
         }
 
-        fun downloadImage (context: Context, downloadUrl: String): Bitmap? {
+        private fun downloadImage (context: Context, downloadUrl: String): Bitmap? {
             val requestQueue = VolleyRequestSingleton.getInstance(context).requestQueue
 
             val future: RequestFuture<Bitmap> = RequestFuture.newFuture()
@@ -103,9 +117,5 @@ class GithubAPI {
         }
     }
 
-    inner class GithubThemeItem {
-        var name: String = ""
-        var download_url: String = ""
-        var image: Bitmap? = null
-    }
+    class GithubThemeItem (var name: String, var downloadUrl: String, var previewImage: Bitmap?)
 }

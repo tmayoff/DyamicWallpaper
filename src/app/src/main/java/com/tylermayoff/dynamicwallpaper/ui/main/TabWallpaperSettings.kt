@@ -30,7 +30,7 @@ class TabWallpaperSettings : UpdateableFragment () {
     private lateinit var sharedPreferences : SharedPreferences
 
     lateinit var activeTheme : String
-    private lateinit var themeConfig : ThemeConfiguration
+    private var themeConfig : ThemeConfiguration? = null
     private var useLocation : Boolean = false
 
     // UI
@@ -55,13 +55,6 @@ class TabWallpaperSettings : UpdateableFragment () {
         sharedPreferences = requireContext().getSharedPreferences(getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
         activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
 
-        // Get Location Permission
-        if (!checkPermissions()) {
-//            requestPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-            useLocation = false
-        } else {
-            useLocation = true
-        }
 
         // UI Initialization
         textViewNextChange = root.findViewById(R.id.textView_NextChange)
@@ -76,7 +69,7 @@ class TabWallpaperSettings : UpdateableFragment () {
         }
 
         // Get theme config
-        if (activeTheme != null || activeTheme != "") {
+        if ( activeTheme.isNotEmpty()) {
             themeConfig = ThemeConfiguration(requireContext(), activeTheme, useLocation)
         }
 
@@ -87,8 +80,10 @@ class TabWallpaperSettings : UpdateableFragment () {
         activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
         textViewActiveTheme.text = activeTheme
 
-        var nextTime = themeConfig.getNextTimeChange()!!
-        textViewNextChange.text = nextTime.time.toString()
+//        if (themeConfig != null) {
+//            val nextTime = themeConfig.getNextTimeChange()!!
+//            textViewNextChange.text = nextTime.time.toString()
+//        }
     }
 
     private fun checkPermissions () : Boolean {
