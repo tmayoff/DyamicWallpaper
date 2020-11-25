@@ -27,4 +27,4 @@ jobs:
       - uses: gradle/wrapper-validation-action@v1
   
       - name: Run Gradle command
-        run: ./gradlew assemble
+        run: src/gradlew assemble
