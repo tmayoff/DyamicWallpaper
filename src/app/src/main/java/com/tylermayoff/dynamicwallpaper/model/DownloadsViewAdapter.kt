@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.tylermayoff.dynamicwallpaper.R
 import com.tylermayoff.dynamicwallpaper.ui.main.TabDownloadWallpaper
 import com.tylermayoff.dynamicwallpaper.ui.main.TabWallpaperSettings
+import com.tylermayoff.dynamicwallpaper.util.CustomUtilities
 import com.tylermayoff.dynamicwallpaper.util.GithubAPI
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -27,12 +28,7 @@ import java.io.OutputStream
 
 class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var context: Context, var themes: Array<GithubAPI.GithubThemeItem>) : RecyclerView.Adapter<DownloadsViewAdapter.DownloadsHolder>() {
 
-    // Downloads
-    var onComplete: BroadcastReceiver? = object : BroadcastReceiver() {
-        override fun onReceive(ctxt: Context?, intent: Intent?) {
-            tabDownloadWallpaper.stopDownload()
-        }
-    }
+    val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DownloadsHolder {
         val view: View = LayoutInflater.from(parent.context).inflate(R.layout.download_item, parent, false)
@@ -52,11 +48,43 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
 
     override fun getItemCount(): Int = themes.size
 
+    fun removeItem(githubThemeItem: GithubAPI.GithubThemeItem) {
+        val themeList = arrayListOf(*themes)
+        themeList.remove(githubThemeItem)
+        themes = themeList.toTypedArray()
+        notifyDataSetChanged()
+    }
+
     inner class DownloadsHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var textViewName: TextView = itemView.findViewById(R.id.textView_ThemeName)
         var imageViewPreview: ImageView = itemView.findViewById(R.id.imageView_DownloadPreview)
         var cardView: CardView = itemView.findViewById(R.id.cardView_DownloadableItem)
         lateinit var themeItem: GithubAPI.GithubThemeItem
+        var downloadId: Long = -1
+
+        // Downloads
+        private var onComplete: BroadcastReceiver? = object : BroadcastReceiver() {
+            override fun onReceive(ctxt: Context?, intent: Intent?) {
+                if (intent == null) return
+
+                val referenceId: Long = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+
+                if (downloadId == referenceId) {
+
+                    tabDownloadWallpaper.stopDownload()
+                    context.unregisterReceiver(this)
+                    // TODO Unzip the folder and prep the directory
+                    val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
+                    if (cursor.moveToFirst()) {
+                        val uri: Uri = Uri.parse(cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)))
+                        val f = File(uri.path!!)
+                        if (CustomUtilities.unpackZip(f, File(context.filesDir.toString() + "/" + context.getString(R.string.themes_relative_path) + "/" + themeItem.name))) {
+                            removeItem(themeItem)
+                        }
+                    }
+                }
+            }
+        }
 
         init {
             cardView.setOnClickListener {
@@ -70,13 +98,12 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
                     themeDir.mkdir()
 
                     // Download the .zip Content
-                    val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                     context.registerReceiver(onComplete, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
                     val request = DownloadManager.Request(Uri.parse(themeItem.downloadUrl))
                     request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_WIFI)
-                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                     request.setDestinationInExternalFilesDir(context, null, "tmp/" + themeItem.name + ".zip")
-                    downloadManager.enqueue(request)
+                    downloadId = downloadManager.enqueue(request)
 
                     tabDownloadWallpaper.startDownload()
                 }

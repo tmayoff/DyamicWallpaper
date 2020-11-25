@@ -79,7 +79,8 @@ class TabLocalWallpapers : UpdateableFragment() {
                 var tmpThemes = mutableListOf<ThemeItem>()
 
                 for (theme in themeFolders) {
-                    val images: Array<File> = theme.listFiles(imageTypeFilter)!!
+                    val images: Array<File> = theme.listFiles(imageTypeFilter) ?: continue
+
                     if (images.isEmpty()) continue
                     val r = Random()
                     val rImg = r.nextInt(images.size)

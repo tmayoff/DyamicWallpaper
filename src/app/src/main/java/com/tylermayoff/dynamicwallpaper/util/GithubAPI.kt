@@ -9,8 +9,6 @@ import com.android.volley.toolbox.ImageRequest
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.RequestFuture
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.tylermayoff.dynamicwallpaper.model.DownloadableItem
 import org.json.JSONArray
 import org.json.JSONObject
 import java.lang.Exception
