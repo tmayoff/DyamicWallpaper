@@ -21,6 +21,9 @@
 
     <string name="themes_relative_path">/themes</string>
 
+    <!-- Tab Downloads -->
+    <string name="download_message">Downloading Theme</string>
+
     <!-- Change Wallpaper string  -->
     <string name="preview_image_view_text_placeholder">Theme Preview</string>
     <string name="add_theme_button"></string>

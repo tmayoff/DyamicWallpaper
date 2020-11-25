@@ -1,5 +1,14 @@
 package com.tylermayoff.dynamicwallpaper.util;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 public class CustomUtilities {
 
     public static int compareNatural (String s1, String s2)
@@ -39,4 +48,54 @@ public class CustomUtilities {
         return(c1 - c2);
     }
 
+
+    public static boolean unpackZip(File zipFile, File outputDir)
+    {
+        if (!outputDir.exists())
+            outputDir.mkdir();
+
+        InputStream is;
+        ZipInputStream zis;
+        try
+        {
+            String filename;
+            is = new FileInputStream(zipFile);
+            zis = new ZipInputStream(new BufferedInputStream(is));
+            ZipEntry ze;
+            byte[] buffer = new byte[1024];
+            int count;
+
+            while ((ze = zis.getNextEntry()) != null)
+            {
+                filename = ze.getName();
+
+                // Need to create directories if not exists, or
+                // it will generate an Exception...
+                if (ze.isDirectory()) {
+                    File f = new File(outputDir + "/" + filename);
+                    f.mkdirs();
+                    continue;
+                }
+
+                FileOutputStream fOut = new FileOutputStream(outputDir + "/" + filename);
+
+                while ((count = zis.read(buffer)) != -1)
+                {
+                    fOut.write(buffer, 0, count);
+                }
+
+                fOut.close();
+                zis.closeEntry();
+            }
+
+            zis.close();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
 }

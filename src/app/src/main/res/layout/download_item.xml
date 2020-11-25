@@ -14,7 +14,7 @@
         android:id="@+id/cardView_DownloadableItem"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
+        android:visibility="visible"
         app:cardCornerRadius="0dp"
         app:cardElevation="8dp"
         app:contentPadding="15dp">
