@@ -1,5 +1,7 @@
 package com.tylermayoff.dynamicwallpaper
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.widget.ViewPager2
@@ -9,13 +11,25 @@ import com.tylermayoff.dynamicwallpaper.ui.main.TabsPageAdapter
 
 class MainActivity : AppCompatActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    private lateinit var sharedPreferences : SharedPreferences
+    lateinit var activeTheme : String
 
-        var pageAdapter = TabsPageAdapter(this)
-        var viewPager : ViewPager2 = findViewById(R.id.view_pager)
-        var tabLayout : TabLayout = findViewById(R.id.tabs)
+    lateinit var pageAdapter: TabsPageAdapter
+    lateinit var viewPager: ViewPager2
+    lateinit var tabLayout: TabLayout
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        sharedPreferences = getSharedPreferences(getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
+        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
+
+
+        pageAdapter = TabsPageAdapter(this)
+        viewPager = findViewById(R.id.view_pager)
+        tabLayout = findViewById(R.id.tabs)
+
 
         viewPager.apply {
             adapter = pageAdapter
@@ -35,5 +49,9 @@ class MainActivity : AppCompatActivity() {
                 else -> "Missing String"
             }
         }.attach()
+    }
+
+    fun noSettings () {
+        viewPager.setCurrentItem(1, true)
     }
 }
