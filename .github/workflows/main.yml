@@ -26,8 +26,28 @@ jobs:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
         
+      - name: Change directory
+        run: cd src
+        
       - name: Gradlew Executable
-        run: chmod +x src/gradlew
+        run: chmod +x gradlew
          
       - name: Run Gradle command
-        run: src/gradlew assemble
+        run: gradlew assemble
+        
+      - name: Create a Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: apk release
+          release_name: release
+          
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{steps.create_release.outputs.upload_url}}
+          asset_path: src/app/build/outputs/apk/app-release-unsigned.apk
+          asset_name: DynamicWallpaper.apk
