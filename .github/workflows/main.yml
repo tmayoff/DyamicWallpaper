@@ -26,8 +26,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
         
-      - name: Change directory
-        run: cd src
+      - name: Set project dir environment var
+        run: echo ::set-env name=PROJECT_DIR::"$GITHUB_WORKSPACE/src"
         
       - name: Gradlew Executable
         run: chmod +x gradlew
