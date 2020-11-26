@@ -67,18 +67,6 @@ class TabDownloadWallpaper : UpdateableFragment() {
 
     override fun update() { }
 
-    fun startDownload() {
-        activity?.runOnUiThread {
-            progressUI.visibility = View.VISIBLE
-        }
-    }
-
-    fun stopDownload() {
-        activity?.runOnUiThread {
-            progressUI.visibility = View.INVISIBLE
-        }
-    }
-
     private fun populateRecyclerView() {
         GlobalScope.launch {
             val nullThemes = GithubAPI.getThemesFromGithub(requireContext())

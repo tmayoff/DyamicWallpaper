@@ -17,6 +17,9 @@
 
     <!-- Shared Preferences -->
     <string name="preferences_file_key">com.tylermayoff.dynamicwallpaper.prefs</string>
+    <string name="preferences_sunset_time">sunset_time</string>
+    <string name="preferences_sunrise_time">sunrise_time</string>
+    <string name="preferences_use_sunset_sunrise">use_sunset_sunrise</string>
     <string name="preferences_active_theme">active_theme</string>
 
     <string name="themes_relative_path">/themes</string>
@@ -26,5 +29,7 @@
 
     <!-- Change Wallpaper string  -->
     <string name="preview_image_view_text_placeholder">Theme Preview</string>
-    <string name="add_theme_button"></string>
+    <string name="use_time_checkbox">Use Sunset and Sunrise times</string>
+    <string name="sunrise_text">Sunrise</string>
+    <string name="sunset_text">Sunset</string>
 </resources>
