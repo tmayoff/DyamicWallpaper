@@ -16,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -34,21 +35,54 @@ import java.util.*
 
 class TabWallpaperSettings : UpdateableFragment () {
 
-    // UI
+    private lateinit var appSettings: AppSettings
+    private val formatter: SimpleDateFormat = SimpleDateFormat("hh:mm", Locale.getDefault())
+
+    // Settings UI
+    private lateinit var root: View
     private lateinit var buttonSetSunrise: Button
     private lateinit var buttonSetSunset: Button
     private lateinit var checkBoxUseSunsetSunrise: CheckBox
     private lateinit var layoutSunrise: ConstraintLayout
     private lateinit var layoutSunset: ConstraintLayout
 
+    // Active Theme UI
+    private lateinit var textViewActiveTheme: TextView
+    private lateinit var layoutActiveTheme: LinearLayout
+    private lateinit var fabSetWallpaper: FloatingActionButton
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val root = inflater.inflate(R.layout.fragment_wallpaper_settings, container, false)
+        root = inflater.inflate(R.layout.fragment_wallpaper_settings, container, false)
 
-        val appSettings = AppSettings.getInstance(requireContext())
+        appSettings = AppSettings.getInstance(requireContext())
 
-        val formatter = SimpleDateFormat("hh:mm", Locale.getDefault())
+        initializeAppSettings()
+        initializeActiveTheme()
+//        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
+//        if (activeTheme.isNotEmpty()) {
+//
+//            // UI Initialization
+//            textViewNextChange = root.findViewById(R.id.textView_NextChange)
+//            textViewActiveTheme = root.findViewById(R.id.theme_name_TextView)
+//
+//            // Listeners
+//
+//
+//            // Get theme config
+//            if (activeTheme.isNotEmpty()) {
+//                themeConfig = ThemeConfiguration(requireContext(), activeTheme, useLocation)
+//            }
+//        } else {
+//            // TODO redirect
+//            if (activity != null) {
+//                (activity as MainActivity).noSettings()
+//            }
+//        }
 
-        // UI Initialization
+        return root
+    }
+
+    private fun initializeAppSettings () {
         buttonSetSunrise = root.findViewById(R.id.button_SetSunrise)
         buttonSetSunset = root.findViewById(R.id.button_SetSunset)
         checkBoxUseSunsetSunrise = root.findViewById(R.id.checkBox_UseSunTimes)
@@ -103,35 +137,31 @@ class TabWallpaperSettings : UpdateableFragment () {
                 layoutSunset.visibility = View.GONE
             }
         }
-
-//        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
-//        if (activeTheme.isNotEmpty()) {
-//
-//            // UI Initialization
-//            textViewNextChange = root.findViewById(R.id.textView_NextChange)
-//            textViewActiveTheme = root.findViewById(R.id.theme_name_TextView)
-//            floatingActionButtonSetWallpaper = root.findViewById(R.id.button_SetWallpaper)
-//
-//            // Listeners
-//            floatingActionButtonSetWallpaper.setOnClickListener {
-//                val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-//                intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(requireContext(), DynamicWallpaperService::class.java))
-//                startActivity(intent)
-//            }
-//
-//            // Get theme config
-//            if (activeTheme.isNotEmpty()) {
-//                themeConfig = ThemeConfiguration(requireContext(), activeTheme, useLocation)
-//            }
-//        } else {
-//            // TODO redirect
-//            if (activity != null) {
-//                (activity as MainActivity).noSettings()
-//            }
-//        }
-
-        return root
     }
 
-    override fun update() { }
+    private fun initializeActiveTheme () {
+        textViewActiveTheme = root.findViewById(R.id.textView_ActiveTheme)
+        layoutActiveTheme = root.findViewById(R.id.layout_ActiveTheme)
+        fabSetWallpaper = root.findViewById(R.id.fab_SetWallpaper)
+
+        // Listeners
+        fabSetWallpaper.setOnClickListener {
+            val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
+            intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(requireContext(), DynamicWallpaperService::class.java))
+            startActivity(intent)
+        }
+
+        update()
+    }
+
+    override fun update() {
+        if (appSettings.activeTheme.isBlank()) {
+            layoutActiveTheme.visibility = View.GONE
+            fabSetWallpaper.visibility = View.GONE
+        } else {
+            layoutActiveTheme.visibility = View.VISIBLE
+            fabSetWallpaper.visibility = View.VISIBLE
+            textViewActiveTheme.text = appSettings.activeTheme
+        }
+    }
 }

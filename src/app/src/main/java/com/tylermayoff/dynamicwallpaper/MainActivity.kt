@@ -4,16 +4,19 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.tylermayoff.dynamicwallpaper.ui.main.TabsPageAdapter
+import com.tylermayoff.dynamicwallpaper.util.AppSettings
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var sharedPreferences : SharedPreferences
-    lateinit var activeTheme : String
+//    lateinit var activeTheme : String
 
+    lateinit var appSettings: AppSettings
     lateinit var pageAdapter: TabsPageAdapter
     lateinit var viewPager: ViewPager2
     lateinit var tabLayout: TabLayout
@@ -22,9 +25,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        appSettings = AppSettings.getInstance(this)
         sharedPreferences = getSharedPreferences(getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
-        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
-
 
         pageAdapter = TabsPageAdapter(this)
         viewPager = findViewById(R.id.view_pager)
@@ -51,7 +53,8 @@ class MainActivity : AppCompatActivity() {
         }.attach()
     }
 
-    fun noSettings () {
-        viewPager.setCurrentItem(1, true)
+    fun setActiveTheme(themeName: String) {
+        appSettings.activeTheme = themeName
+        viewPager.setCurrentItem(0, true)
     }
 }

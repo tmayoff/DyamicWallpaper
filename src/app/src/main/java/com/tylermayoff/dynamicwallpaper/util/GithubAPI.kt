@@ -17,35 +17,10 @@ import java.util.concurrent.TimeUnit
 class GithubAPI {
 
     companion object {
-        fun getThemeUrlFromName(themeName: String): String {
-            return "https://api.github.com/repos/tmayoff/DyamicWallpaper/contents/$themeName?ref=downloads"
-        }
-
-
-        fun getTheme(context: Context, themeUrl: String): Array<GithubThemeItem> {
-            val requestQueue = VolleyRequestSingleton.getInstance(context).requestQueue
-
-            val future: RequestFuture<JSONArray> = RequestFuture.newFuture()
-            val request = JsonArrayRequest(Request.Method.GET, themeUrl, JSONArray(), future, future)
-            requestQueue.add(request)
-
-            return try {
-                val response = future.get(10, TimeUnit.SECONDS)
-                val array: ArrayList<GithubThemeItem> = arrayListOf()
-                for (i in 0 until response.length()) {
-                    val gson = Gson()
-                    val gitTheme: GithubThemeItem = gson.fromJson(response[i].toString(), GithubThemeItem::class.java)
-//                    gitTheme.image = downloadImage(context, gitTheme.download_url)
-                    array.add(gitTheme)
-                }
-
-                array.toTypedArray()
-            }catch (e: Exception) {
-                arrayOf()
-            }
-        }
 
         fun getThemesFromGithub (context: Context): Array<GithubThemeItem>? {
+            val appSettings = AppSettings.getInstance(context)
+
             val requestQueue = VolleyRequestSingleton.getInstance(context).requestQueue
 
             val future: RequestFuture<JSONArray> = RequestFuture.newFuture()
@@ -58,6 +33,16 @@ class GithubAPI {
                 val items: ArrayList<GithubThemeItem> = arrayListOf()
                 for (i in 0 until response.length()) {
                     val item: JSONObject = response.get(i) as JSONObject
+
+                    // Skip if it's already downloaded
+                    var found = false
+                    for (local in appSettings.localThemes)
+                        if (local.name == item["name"]) {
+                            found = true
+                            break
+                        }
+                    if (found) continue
+
                     val themeItem = getThemeContent(context, item["name"].toString(), "https://api.github.com/repos/tmayoff/DyamicWallpaper/contents/" + item["name"].toString() + "?ref=downloads")
                     if (themeItem != null)
                         items.add(themeItem)
