@@ -28,4 +28,4 @@ jobs:
       - name: Build Android
         uses: sparkfabrik/android-build-action@v1.0.0
         with:
-          project: ./
+          project-path: ./
