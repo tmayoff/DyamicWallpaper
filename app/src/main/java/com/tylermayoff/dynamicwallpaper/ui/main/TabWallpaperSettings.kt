@@ -16,9 +16,10 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.tylermayoff.dynamicwallpaper.DynamicWallpaperService
 import com.tylermayoff.dynamicwallpaper.R
-import com.tylermayoff.dynamicwallpaper.ThemeConfiguration
+import com.tylermayoff.dynamicwallpaper.util.ThemeConfiguration
 import com.tylermayoff.dynamicwallpaper.util.AppSettings
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 class TabWallpaperSettings : UpdateableFragment () {
@@ -134,12 +135,7 @@ class TabWallpaperSettings : UpdateableFragment () {
             layoutActiveTheme.visibility = View.VISIBLE
             fabSetWallpaper.visibility = View.VISIBLE
             textViewActiveTheme.text = appSettings.activeTheme
-            val timesString = StringBuilder()
-            for (i in themeConfig!!.wallpaperChangeTimes) {
-                timesString.append(formatter.format(i.time) + "\n")
-            }
-
-            textViewTimes.text = timesString
+            textViewTimes.text = themeConfig!!.getNextChangeTime().toString()
         }
     }
 }
