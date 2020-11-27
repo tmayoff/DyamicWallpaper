@@ -10,6 +10,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator
 import com.luckycatlabs.sunrisesunset.Zenith
+import com.tylermayoff.dynamicwallpaper.util.AppSettings
 import com.tylermayoff.dynamicwallpaper.util.CustomUtilities.*
 import org.apache.commons.io.FileUtils
 import java.io.File
@@ -40,12 +41,10 @@ class ThemeConfiguration() {
     var usingSunsetSunriseTime : Boolean = false
     lateinit var themeConfig : ThemeConfig
 
-    @SuppressLint("MissingPermission")
-    constructor(context: Context, themeName : String, useLocation: Boolean = false) : this() {
+    constructor(context: Context, themeName : String) : this() {
         val themeDir = File(context.filesDir.absolutePath + "/themes/" + themeName)
 
-        val imageFiles : Array<File>? = themeDir.listFiles(imageFilter)
-        if (imageFiles == null) return
+        val imageFiles : Array<File> = themeDir.listFiles(imageFilter) ?: return
 
         Arrays.sort(imageFiles) {f1, f2 -> compareNatural(f1.name, f2.name) }
 
@@ -54,31 +53,65 @@ class ThemeConfiguration() {
             images.add(b)
         }
 
+        val appSettings = AppSettings.getInstance(context)
+        var useSunsetSunrise = appSettings.useSunsetSunrise
+        if (appSettings.sunsetTime == null || appSettings.sunriseTime == null)
+            useSunsetSunrise = false
+
         // Get theme.json configuration
-        val configFile : Array<File> = themeDir.listFiles(jsonFilter)
-        if (configFile.isNotEmpty()) {
+        val configFile : Array<File>? = themeDir.listFiles(jsonFilter)
+        if (configFile != null) {
             val gson : Gson = GsonBuilder().create()
             val jsonString : String = FileUtils.readFileToString(configFile[0], "UTF-8")
             themeConfig = gson.fromJson(jsonString, ThemeConfig::class.java)
 
-            // Setup sunset / sunrise times
-            var sunrise : Calendar
-            var sunset : Calendar
-            if (useLocation) {
-                var fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-                fusedLocationClient.lastLocation.addOnSuccessListener { location: Location ->
-                    sunrise = SunriseSunsetCalculator.getSunrise(location.latitude, location.longitude, TimeZone.getTimeZone("America/New_York"), Calendar.getInstance(), Zenith.CIVIL.degrees().toDouble())
-                    sunset = SunriseSunsetCalculator.getSunset(location.latitude, location.longitude, TimeZone.getTimeZone("America/New_York"), Calendar.getInstance(), Zenith.CIVIL.degrees().toDouble())
+            if (useSunsetSunrise) {
+                // Day times
+                val sunsetSunriseLength = 10
+                val dayNightInterval: Int = ((appSettings.sunsetTime!!.timeInMillis - appSettings.sunriseTime!!.timeInMillis).toInt() / 1000 / 60) - sunsetSunriseLength
+                val dayIntervals = dayNightInterval / themeConfig.dayImageList.size
+                val nightIntervals = dayNightInterval / themeConfig.nightImageList.size
+                val sunriseIntervals = sunsetSunriseLength / themeConfig.sunriseImageList.size
+                val sunsetIntervals = sunsetSunriseLength / themeConfig.sunsetImageList.size
+
+                // Times 00:00 - Sunrise
+                var startCal : Calendar = GregorianCalendar()
+//                startCal.set(0, 0, 0, 0, 0, 0)
+//                for (i in 0..themeConfig.nightImageList.size / 2) {
+//                    wallpaperChangeTimes.add(startCal.clone() as Calendar)
+//                    startCal.add(Calendar.MINUTE, nightIntervals)
+//                }
+
+                // Times Sunrise
+                startCal = appSettings.sunriseTime!!
+                startCal.add(Calendar.MINUTE, -sunsetSunriseLength / 2)
+                for (i in 0..themeConfig.sunriseImageList.size) {
+                    wallpaperChangeTimes.add(startCal.clone() as Calendar)
+                    startCal.add(Calendar.MINUTE, sunriseIntervals)
                 }
+
+                // Times Sunrise - Sunset
+                startCal = appSettings.sunriseTime!!
+                startCal.add(Calendar.MINUTE, sunsetSunriseLength / 2)
+                for (i in 0..themeConfig.dayImageList.size) {
+                    wallpaperChangeTimes.add(startCal.clone() as Calendar)
+                    startCal.add(Calendar.MINUTE, dayIntervals)
+                }
+
+                // Times Sunset - 00:00
+                startCal = appSettings.sunsetTime!!
+                startCal.add(Calendar.MINUTE, dayIntervals)
+//                for (i in 0..themeConfig.nightImageList.size / 2) {
+//                    wallpaperChangeTimes.add(startCal.clone() as Calendar)
+//                    startCal.add(Calendar.MINUTE, nightIntervals)
+//                }
             }
         }
 
-        if (!useLocation) {
+        if (!useSunsetSunrise) {
             val timeIncrements = 24 * 60 / images.size
             val startCal : Calendar = GregorianCalendar()
 
-            startCal.roll(Calendar.MINUTE, true)
-            startCal.roll(Calendar.HOUR_OF_DAY, true)
             startCal.set(0, 0, 0, 0, 0, 0)
             for (i in 0..images.size) {
                 wallpaperChangeTimes.add(startCal.clone() as Calendar)

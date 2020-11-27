@@ -73,8 +73,6 @@ class TabDownloadWallpaper : UpdateableFragment() {
             if (nullThemes != null)
                 themes = nullThemes
 
-
-
             activity?.runOnUiThread {
                 downloadsAdapter.themes = themes
                 downloadsAdapter.notifyDataSetChanged()

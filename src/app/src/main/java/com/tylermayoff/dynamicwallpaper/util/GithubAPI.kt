@@ -49,7 +49,6 @@ class GithubAPI {
                 }
                 items.toTypedArray()
             } catch (e: Exception) {
-                Log.d("Github API", e.message!!)
                 null
             }
         }

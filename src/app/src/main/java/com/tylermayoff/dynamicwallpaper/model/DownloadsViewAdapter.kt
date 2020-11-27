@@ -14,17 +14,13 @@ import com.tonyodev.fetch2.*
 import com.tonyodev.fetch2core.DownloadBlock
 import com.tylermayoff.dynamicwallpaper.R
 import com.tylermayoff.dynamicwallpaper.ui.main.TabDownloadWallpaper
-import com.tylermayoff.dynamicwallpaper.util.AppSettings
 import com.tylermayoff.dynamicwallpaper.util.CustomUtilities
 import com.tylermayoff.dynamicwallpaper.util.GithubAPI
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.File
 
-
 class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var context: Context, var themes: Array<GithubAPI.GithubThemeItem>) : RecyclerView.Adapter<DownloadsViewAdapter.DownloadsHolder>() {
-
-    val appSettings = AppSettings.getInstance(context)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DownloadsHolder {
         val view: View = LayoutInflater.from(parent.context).inflate(R.layout.download_item, parent, false)
@@ -40,6 +36,7 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
             holder.imageViewPreview.setImageBitmap(downloadableItem.previewImage)
 
         holder.cardView.visibility = View.VISIBLE
+        holder.initialize()
     }
 
     override fun getItemCount(): Int = themes.size
@@ -59,12 +56,13 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
         var progressBar: ProgressBar = itemView.findViewById(R.id.progressBar_Download)
         lateinit var themeItem: GithubAPI.GithubThemeItem
 
-
         private var fetchListener: FetchListener = object : FetchListener {
-            override fun onQueued(download: Download, waitingOnNetwork: Boolean) { }
+            override fun onQueued(download: Download, waitingOnNetwork: Boolean) {
+                progressBar.visibility = View.VISIBLE
+                progressBar.progress = download.progress
+            }
 
             override fun onCompleted(download: Download) {
-
                 val f = File(download.file)
                 if (CustomUtilities.unpackZip(f, File(context.filesDir.toString() + "/" + context.getString(R.string.themes_relative_path) + "/" + themeItem.name))) {
                     removeItem(themeItem)
@@ -119,6 +117,11 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
         }
 
         init {
+            initialize()
+        }
+
+        fun initialize () {
+            progressBar.visibility = View.INVISIBLE
             cardView.setOnClickListener(downloadClickListener)
         }
     }

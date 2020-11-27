@@ -1,15 +1,9 @@
 package com.tylermayoff.dynamicwallpaper.ui.main
 
-import android.Manifest
-import android.annotation.SuppressLint
 import android.app.TimePickerDialog
 import android.app.WallpaperManager
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,15 +12,9 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat
-import com.google.android.gms.location.LocationServices
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator
-import com.luckycatlabs.sunrisesunset.Zenith
 import com.tylermayoff.dynamicwallpaper.DynamicWallpaperService
-import com.tylermayoff.dynamicwallpaper.MainActivity
 import com.tylermayoff.dynamicwallpaper.R
 import com.tylermayoff.dynamicwallpaper.ThemeConfiguration
 import com.tylermayoff.dynamicwallpaper.util.AppSettings
@@ -36,7 +24,8 @@ import java.util.*
 class TabWallpaperSettings : UpdateableFragment () {
 
     private lateinit var appSettings: AppSettings
-    private val formatter: SimpleDateFormat = SimpleDateFormat("hh:mm", Locale.getDefault())
+    private val formatter: SimpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private var themeConfig: ThemeConfiguration? = null
 
     // Settings UI
     private lateinit var root: View
@@ -48,6 +37,7 @@ class TabWallpaperSettings : UpdateableFragment () {
 
     // Active Theme UI
     private lateinit var textViewActiveTheme: TextView
+    private lateinit var textViewTimes: TextView
     private lateinit var layoutActiveTheme: LinearLayout
     private lateinit var fabSetWallpaper: FloatingActionButton
 
@@ -58,26 +48,6 @@ class TabWallpaperSettings : UpdateableFragment () {
 
         initializeAppSettings()
         initializeActiveTheme()
-//        activeTheme = sharedPreferences.getString(getString(R.string.preferences_active_theme), "")!!
-//        if (activeTheme.isNotEmpty()) {
-//
-//            // UI Initialization
-//            textViewNextChange = root.findViewById(R.id.textView_NextChange)
-//            textViewActiveTheme = root.findViewById(R.id.theme_name_TextView)
-//
-//            // Listeners
-//
-//
-//            // Get theme config
-//            if (activeTheme.isNotEmpty()) {
-//                themeConfig = ThemeConfiguration(requireContext(), activeTheme, useLocation)
-//            }
-//        } else {
-//            // TODO redirect
-//            if (activity != null) {
-//                (activity as MainActivity).noSettings()
-//            }
-//        }
 
         return root
     }
@@ -141,6 +111,7 @@ class TabWallpaperSettings : UpdateableFragment () {
 
     private fun initializeActiveTheme () {
         textViewActiveTheme = root.findViewById(R.id.textView_ActiveTheme)
+        textViewTimes = root.findViewById(R.id.textView_NextChange)
         layoutActiveTheme = root.findViewById(R.id.layout_ActiveTheme)
         fabSetWallpaper = root.findViewById(R.id.fab_SetWallpaper)
 
@@ -150,8 +121,9 @@ class TabWallpaperSettings : UpdateableFragment () {
             intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(requireContext(), DynamicWallpaperService::class.java))
             startActivity(intent)
         }
-
-        update()
+        if (appSettings.activeTheme.isNotBlank()) {
+            themeConfig = ThemeConfiguration(requireContext(), appSettings.activeTheme)
+        }
     }
 
     override fun update() {
@@ -162,6 +134,12 @@ class TabWallpaperSettings : UpdateableFragment () {
             layoutActiveTheme.visibility = View.VISIBLE
             fabSetWallpaper.visibility = View.VISIBLE
             textViewActiveTheme.text = appSettings.activeTheme
+            val timesString = StringBuilder()
+            for (i in themeConfig!!.wallpaperChangeTimes) {
+                timesString.append(formatter.format(i.time) + "\n")
+            }
+
+            textViewTimes.text = timesString
         }
     }
 }
