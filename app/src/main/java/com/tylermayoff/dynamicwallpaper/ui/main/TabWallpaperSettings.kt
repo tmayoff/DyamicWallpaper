@@ -19,6 +19,7 @@ import com.tylermayoff.dynamicwallpaper.R
 import com.tylermayoff.dynamicwallpaper.util.ThemeConfiguration
 import com.tylermayoff.dynamicwallpaper.util.AppSettings
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -26,7 +27,6 @@ class TabWallpaperSettings : UpdateableFragment () {
 
     private lateinit var appSettings: AppSettings
     private val formatter: SimpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    private var themeConfig: ThemeConfiguration? = null
 
     // Settings UI
     private lateinit var root: View
@@ -68,35 +68,31 @@ class TabWallpaperSettings : UpdateableFragment () {
 
         // Set sunrise time in settings
         if (appSettings.sunriseTime != null) {
-            buttonSetSunrise.text = formatter.format(appSettings.sunriseTime!!.time)
+            buttonSetSunrise.text = appSettings.sunriseTime.toString()
         }
         // Set sunset time in settings
         if (appSettings.sunsetTime != null) {
-            buttonSetSunset.text = formatter.format(appSettings.sunsetTime!!.time)
+            buttonSetSunset.text = appSettings.sunsetTime.toString()
         }
 
         // Event listeners
         buttonSetSunrise.setOnClickListener {
             TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
-                val calendar = GregorianCalendar()
-                calendar.set(0, 0, 0, 0, 0, 0)
-                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
-                calendar.set(Calendar.MINUTE, minute)
-                appSettings.sunriseTime = calendar
-                buttonSetSunrise.text = formatter.format(appSettings.sunriseTime!!.time)
-            }, if (appSettings.sunriseTime != null) appSettings.sunriseTime!!.get(Calendar.HOUR_OF_DAY) else 0,
-                    if (appSettings.sunriseTime != null) appSettings.sunriseTime!!.get(Calendar.MINUTE) else 0, false).show()
+                val sunriseTime = LocalTime.of(hourOfDay, minute)
+                appSettings.sunriseTime = sunriseTime
+                buttonSetSunrise.text = sunriseTime.toString()
+                update()
+            }, if (appSettings.sunriseTime != null) appSettings.sunriseTime!!.hour else 0,
+                    if (appSettings.sunriseTime != null) appSettings.sunriseTime!!.minute else 0, false).show()
         }
         buttonSetSunset.setOnClickListener {
             TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
-                val calendar = GregorianCalendar()
-                calendar.set(0, 0, 0, 0, 0, 0)
-                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
-                calendar.set(Calendar.MINUTE, minute)
-                appSettings.sunsetTime = calendar
-                buttonSetSunset.text = formatter.format(appSettings.sunsetTime!!.time)
-            }, if (appSettings.sunsetTime != null) appSettings.sunsetTime!!.get(Calendar.HOUR_OF_DAY) else 0,
-                    if (appSettings.sunsetTime != null) appSettings.sunsetTime!!.get(Calendar.MINUTE) else 0, false).show()
+                val sunsetTime = LocalTime.of(hourOfDay, minute)
+                appSettings.sunsetTime = sunsetTime
+                buttonSetSunset.text = sunsetTime.toString()
+                update()
+            }, if (appSettings.sunsetTime != null) appSettings.sunsetTime!!.hour else 0,
+                    if (appSettings.sunsetTime != null) appSettings.sunsetTime!!.minute else 0, false).show()
         }
         checkBoxUseSunsetSunrise.setOnCheckedChangeListener { _, isChecked ->
             appSettings.useSunsetSunrise = isChecked
@@ -122,12 +118,10 @@ class TabWallpaperSettings : UpdateableFragment () {
             intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(requireContext(), DynamicWallpaperService::class.java))
             startActivity(intent)
         }
-        if (appSettings.activeTheme.isNotBlank()) {
-            themeConfig = ThemeConfiguration(requireContext(), appSettings.activeTheme)
-        }
     }
 
     override fun update() {
+
         if (appSettings.activeTheme.isBlank()) {
             layoutActiveTheme.visibility = View.GONE
             fabSetWallpaper.visibility = View.GONE
@@ -135,7 +129,8 @@ class TabWallpaperSettings : UpdateableFragment () {
             layoutActiveTheme.visibility = View.VISIBLE
             fabSetWallpaper.visibility = View.VISIBLE
             textViewActiveTheme.text = appSettings.activeTheme
-            textViewTimes.text = themeConfig!!.getNextChangeTime().toString()
+            if (appSettings.themeConfig != null)
+                textViewTimes.text = appSettings.themeConfig!!.getNextChangeTime().toString()
         }
     }
 }

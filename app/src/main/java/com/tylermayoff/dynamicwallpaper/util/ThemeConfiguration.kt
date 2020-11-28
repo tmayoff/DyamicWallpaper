@@ -11,7 +11,9 @@ import java.io.File
 import java.io.FileFilter
 import java.nio.file.Files
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import java.util.*
+import kotlin.math.abs
 
 class ThemeConfiguration() {
 
@@ -34,7 +36,9 @@ class ThemeConfiguration() {
     var useSunsetSunrise : Boolean = false
     lateinit var themeConfig : ThemeConfig
 
-    constructor(context: Context, themeName : String) : this() {
+    constructor(context: Context, themeName : String, useSun: Boolean, sunrise: LocalTime?, sunset: LocalTime?) : this() {
+        useSunsetSunrise = useSun
+
         val themeDir = File(context.filesDir.absolutePath + "/themes/" + themeName)
 
         val imageFiles : Array<File> = themeDir.listFiles(imageFilter) ?: return
@@ -46,11 +50,6 @@ class ThemeConfiguration() {
             images.add(b)
         }
 
-        val appSettings = AppSettings.getInstance(context)
-        useSunsetSunrise = appSettings.useSunsetSunrise
-        if (appSettings.sunsetTime == null || appSettings.sunriseTime == null)
-            useSunsetSunrise = false
-
         // Get theme.json configuration
         val configFile : Array<File>? = themeDir.listFiles(jsonFilter)
         if (configFile != null) {
@@ -58,11 +57,13 @@ class ThemeConfiguration() {
             val jsonString : String = FileUtils.readFileToString(configFile[0], "UTF-8")
             themeConfig = gson.fromJson(jsonString, ThemeConfig::class.java)
 
+            if (sunrise == null || sunset == null) useSunsetSunrise = false
+
             if (useSunsetSunrise) {
                 // Day times
                 val sunsetSunriseLength = 10
 
-                val dayLength: Int = ((appSettings.sunsetTime!!.timeInMillis - appSettings.sunriseTime!!.timeInMillis).toInt() / 1000 / 60) - sunsetSunriseLength
+                val dayLength: Int =  abs(ChronoUnit.MINUTES.between(sunset, sunrise).toInt() - sunsetSunriseLength)
                 val nightLength: Int = (24 * 60) - dayLength - sunsetSunriseLength
 
                 val dayIntervals = dayLength / themeConfig.dayImageList.size
@@ -71,30 +72,28 @@ class ThemeConfiguration() {
                 val sunsetIntervals = sunsetSunriseLength / themeConfig.sunsetImageList.size
 
                 // Sunrise
-                var startCal: Calendar = appSettings.sunriseTime!!.clone() as Calendar
-                var startTime = LocalTime.of(startCal.get(Calendar.HOUR_OF_DAY), Calendar.MINUTE)
+                var startTime = sunrise
                 for (i in themeConfig.sunriseImageList) {
-                    sunriseTimes.add(startTime)
+                    sunriseTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(sunriseIntervals.toLong())
                 }
 
                 // Times day
                 for (i in themeConfig.dayImageList) {
-                    dayTimes.add(startTime)
+                    dayTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(dayIntervals.toLong())
                 }
 
                 // Sunset
-                startCal = appSettings.sunsetTime!!.clone() as Calendar
-                startTime = LocalTime.of(startCal.get(Calendar.HOUR_OF_DAY), Calendar.MINUTE)
+                startTime = sunset
                 for (i in themeConfig.sunsetImageList) {
-                    sunsetTimes.add(startTime)
+                    sunsetTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(sunsetIntervals.toLong())
                 }
 
                 // Night
                 for (i in themeConfig.nightImageList) {
-                    nightTimes.add(startTime)
+                    nightTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(nightIntervals.toLong())
                 }
             }
@@ -128,44 +127,32 @@ class ThemeConfiguration() {
 
     private fun getCurrentTimeIndex(): Int {
         val now = LocalTime.now()
-        var timeIndex = 0
 
         var last = sunriseTimes[0]
-        for (i in 1..sunriseTimes.size) {
-            timeIndex++
-            if (i == sunriseTimes.size) break
+        for (i in 1 until sunriseTimes.size) {
             if (now  >= last && now <= sunriseTimes[i]) {
-                return timeIndex - 1
+                return i - 1
             }
             last = sunriseTimes[i]
         }
 
-        last = dayTimes[0]
-        for (i in 1..dayTimes.size) {
-            timeIndex++
-            if (i == dayTimes.size) break
+        for (i in 0 until dayTimes.size) {
             if (now  >= last && now <= dayTimes[i]) {
-                return timeIndex - 1
+                return  i + sunriseTimes.size - 1
             }
             last = dayTimes[i]
         }
 
-        last = sunsetTimes[0]
-        for (i in 1..sunsetTimes.size) {
-            timeIndex++
-            if (i == sunsetTimes.size) break
+        for (i in 0 until sunsetTimes.size) {
             if (now  >= last && now <= sunsetTimes[i]) {
-                return timeIndex - 1
+                return i + sunriseTimes.size + dayTimes.size - 1
             }
             last = sunsetTimes[i]
         }
 
-        last = nightTimes[0]
-        for (i in 1..nightTimes.size) {
-            timeIndex++
-            if (i == nightTimes.size) break
+        for (i in 0 until nightTimes.size) {
             if (now  >= last && now <= nightTimes[i]) {
-                return timeIndex - 1
+                return i + sunriseTimes.size + dayTimes.size + sunsetTimes.size - 1
             }
             last = nightTimes[i]
         }

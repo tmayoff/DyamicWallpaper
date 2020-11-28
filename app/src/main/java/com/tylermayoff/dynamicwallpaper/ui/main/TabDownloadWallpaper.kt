@@ -1,25 +1,30 @@
 package com.tylermayoff.dynamicwallpaper.ui.main
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
+import android.app.AlertDialog
+import android.database.Cursor
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.*
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.tylermayoff.dynamicwallpaper.R
 import com.tylermayoff.dynamicwallpaper.model.DownloadsViewAdapter
+import com.tylermayoff.dynamicwallpaper.util.CustomUtilities
 import com.tylermayoff.dynamicwallpaper.util.GithubAPI
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FilenameUtils
+import java.io.File
+import java.util.concurrent.ExecutionException
 
 
 class TabDownloadWallpaper : UpdateableFragment() {
@@ -29,8 +34,38 @@ class TabDownloadWallpaper : UpdateableFragment() {
     lateinit var requestQueue: RequestQueue
 
     // UI
+    private lateinit var fabImportTheme: FloatingActionButton
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var progressUI: ConstraintLayout
+
+    private var onImportTheme = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+        val contentResolver = requireContext().contentResolver
+
+        val dst = File(requireContext().filesDir.absolutePath + "/tmp/")
+        val cursor: Cursor? = contentResolver.query(it, null, null, null)
+        cursor?.use { c ->
+            if (c.moveToFirst()) {
+                val inputStream = contentResolver.openInputStream(it)
+
+                val displayName = c.getString(c.getColumnIndex(OpenableColumns.DISPLAY_NAME))
+                val newFile = File(dst, displayName)
+                FileUtils.copyInputStreamToFile(inputStream, newFile)
+                if (newFile.exists()) {
+
+                    val themesDir = File(requireContext().filesDir.absolutePath + requireContext().getString(R.string.themes_relative_path))
+                    if (!themesDir.exists()) themesDir.mkdir()
+
+                    val themeName = FilenameUtils.getBaseName(newFile.absolutePath)
+
+                    // Clear the theme directory
+                    val themeDir = File(themesDir.absolutePath + "/" + themeName)
+                    themeDir.delete()
+                    themeDir.mkdir()
+                    CustomUtilities.unpackZip(newFile, File(requireContext().filesDir.toString() + "/" + requireContext().getString(R.string.themes_relative_path) + "/" + themeName))
+                }
+            }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -40,6 +75,8 @@ class TabDownloadWallpaper : UpdateableFragment() {
         requestQueue = Volley.newRequestQueue(requireContext())
 
         // UI
+        fabImportTheme = root.findViewById(R.id.fab_ImportTheme)
+
         progressUI = root.findViewById(R.id.progressUI)
         progressUI.visibility = View.INVISIBLE
 
@@ -62,6 +99,11 @@ class TabDownloadWallpaper : UpdateableFragment() {
             populateRecyclerView()
         }
 
+        fabImportTheme.setOnClickListener {
+            // TODO Check for permissions
+            onImportTheme.launch(arrayOf("application/zip"))
+        }
+
         return root
     }
 
@@ -69,9 +111,16 @@ class TabDownloadWallpaper : UpdateableFragment() {
 
     private fun populateRecyclerView() {
         GlobalScope.launch {
-            val nullThemes = GithubAPI.getThemesFromGithub(requireContext())
-            if (nullThemes != null)
+            try {
+                val nullThemes = GithubAPI.getThemesFromGithub(requireContext())
                 themes = nullThemes
+            } catch (e: ExecutionException) {
+                activity?.runOnUiThread {
+                    val alertB = AlertDialog.Builder(requireContext())
+                    alertB.setTitle(e.message)
+                    alertB.create().show()
+                }
+            }
 
             activity?.runOnUiThread {
                 downloadsAdapter.themes = themes
