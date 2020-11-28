@@ -15,7 +15,7 @@ class TabsPageAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter
 
     override fun createFragment(position: Int): Fragment {
 
-        var frag : Fragment = when (position) {
+        val frag : Fragment = when (position) {
             0 -> TabWallpaperSettings()
             1 -> TabLocalWallpapers()
             2 -> TabDownloadWallpaper()

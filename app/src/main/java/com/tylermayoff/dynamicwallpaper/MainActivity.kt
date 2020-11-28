@@ -1,10 +1,7 @@
 package com.tylermayoff.dynamicwallpaper
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -13,8 +10,7 @@ import com.tylermayoff.dynamicwallpaper.util.AppSettings
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var sharedPreferences : SharedPreferences
-//    lateinit var activeTheme : String
+    private var lastActiveTheme : String = ""
 
     lateinit var appSettings: AppSettings
     lateinit var pageAdapter: TabsPageAdapter
@@ -26,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         appSettings = AppSettings.getInstance(this)
-        sharedPreferences = getSharedPreferences(getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
+        lastActiveTheme = appSettings.activeTheme
 
         pageAdapter = TabsPageAdapter(this)
         viewPager = findViewById(R.id.view_pager)
@@ -54,7 +50,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun setActiveTheme(themeName: String) {
-        appSettings.activeTheme = themeName
+        if (lastActiveTheme != themeName) {
+            appSettings.activeTheme = themeName
+            lastActiveTheme = themeName
+        }
+
         viewPager.setCurrentItem(0, true)
     }
 }

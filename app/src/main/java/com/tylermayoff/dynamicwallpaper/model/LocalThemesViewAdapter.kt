@@ -32,8 +32,6 @@ class LocalThemesViewAdapter(var context: Context, var themes: Array<LocalThemeI
 
         init {
 
-            // Setup UI
-
             // Listeners
             previewImg.setOnClickListener {
                 onThemeClickedListener.forEach { it(theme.name) }

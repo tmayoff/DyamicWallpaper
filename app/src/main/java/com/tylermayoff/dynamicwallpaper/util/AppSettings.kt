@@ -23,49 +23,68 @@ class AppSettings(val context: Context)  {
     // App Settings
     var themeConfig: ThemeConfiguration? = null
 
-    var activeTheme: String = ""
-    set(value) {
-        field = value
-        editor.putString(context.getString(R.string.preferences_active_theme), activeTheme)
-        editor.apply()
-        themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
-    }
+    private var _activeTheme: String = ""
+    var activeTheme: String
+        get() {
+            return _activeTheme
+        }
+        set(value) {
+            _activeTheme = value
+            editor.putString(context.getString(R.string.preferences_active_theme), activeTheme)
+            editor.apply()
+            themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
+        }
 
-    var sunsetTime: LocalTime? = null
-    set(value) {
-        field = value
-        editor.putString(context.getString(R.string.preferences_sunset_time), value.toString())
-        editor.apply()
-    }
+    private var _sunsetTime: LocalTime? = null
+    var sunsetTime: LocalTime?
+        get() {
+            return _sunsetTime
+        }
+        set(value) {
+            _sunsetTime = value
+            editor.putString(context.getString(R.string.preferences_sunset_time), value.toString())
+            editor.apply()
+            themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
+        }
 
-    var sunriseTime: LocalTime? = null
-    set(value) {
-        field = value
-        editor.putString(context.getString(R.string.preferences_sunrise_time), value.toString())
-        editor.apply()
-    }
+    private var _sunriseTime: LocalTime? = null
+    var sunriseTime: LocalTime?
+        get() {
+            return _sunriseTime
+        }
+        set(value) {
+            _sunriseTime = value
+            editor.putString(context.getString(R.string.preferences_sunrise_time), value.toString())
+            editor.apply()
+            themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
+        }
 
-    var useSunsetSunrise: Boolean = false
-    set(value) {
-        field = value
-        editor.putBoolean(context.getString(R.string.preferences_use_sunset_sunrise), value)
-    }
+    private var _useSunsetSunrise: Boolean = false
+    var useSunsetSunrise: Boolean
+        get() {
+            return _useSunsetSunrise
+        }
+        set(value) {
+            _useSunsetSunrise = value
+            editor.putBoolean(context.getString(R.string.preferences_use_sunset_sunrise), value)
+            themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
+        }
 
     var localThemes: Array<LocalThemeItem> = arrayOf()
 
     init {
         // Active theme
-        activeTheme = sharedPreferences.getString(context.getString(R.string.preferences_active_theme), "").toString()
+        _activeTheme = sharedPreferences.getString(context.getString(R.string.preferences_active_theme), "").toString()
 
         // Sunset / Sunrise
-        useSunsetSunrise = sharedPreferences.getBoolean(context.getString(R.string.preferences_use_sunset_sunrise), false)
+        _useSunsetSunrise = sharedPreferences.getBoolean(context.getString(R.string.preferences_use_sunset_sunrise), false)
 
         val sunriseText = sharedPreferences.getString(context.getString(R.string.preferences_sunrise_time), "")
         val sunsetText = sharedPreferences.getString(context.getString(R.string.preferences_sunset_time), "")
         if (sunriseText!!.isNotBlank())
-            sunriseTime = LocalTime.parse(sunriseText)
+            _sunriseTime = LocalTime.parse(sunriseText)
         if (sunsetText!!.isNotBlank())
-            sunsetTime = LocalTime.parse(sunsetText)
+            _sunsetTime = LocalTime.parse(sunsetText)
 
         if (activeTheme.isNotBlank()) {
             themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)

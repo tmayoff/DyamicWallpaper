@@ -57,6 +57,8 @@ class ThemeConfiguration() {
             val jsonString : String = FileUtils.readFileToString(configFile[0], "UTF-8")
             themeConfig = gson.fromJson(jsonString, ThemeConfig::class.java)
 
+            if (sunrise == null || sunset == null) useSunsetSunrise = false
+
             if (useSunsetSunrise) {
                 // Day times
                 val sunsetSunriseLength = 10
@@ -125,44 +127,32 @@ class ThemeConfiguration() {
 
     private fun getCurrentTimeIndex(): Int {
         val now = LocalTime.now()
-        var timeIndex = 0
 
         var last = sunriseTimes[0]
-        for (i in 1..sunriseTimes.size) {
-            timeIndex++
-            if (i == sunriseTimes.size) break
+        for (i in 1 until sunriseTimes.size) {
             if (now  >= last && now <= sunriseTimes[i]) {
-                return timeIndex - 1
+                return i - 1
             }
             last = sunriseTimes[i]
         }
 
-        last = dayTimes[0]
-        for (i in 1..dayTimes.size) {
-            timeIndex++
-            if (i == dayTimes.size) break
+        for (i in 0 until dayTimes.size) {
             if (now  >= last && now <= dayTimes[i]) {
-                return timeIndex - 1
+                return  i + sunriseTimes.size - 1
             }
             last = dayTimes[i]
         }
 
-        last = sunsetTimes[0]
-        for (i in 1..sunsetTimes.size) {
-            timeIndex++
-            if (i == sunsetTimes.size) break
+        for (i in 0 until sunsetTimes.size) {
             if (now  >= last && now <= sunsetTimes[i]) {
-                return timeIndex - 1
+                return i + sunriseTimes.size + dayTimes.size - 1
             }
             last = sunsetTimes[i]
         }
 
-        last = nightTimes[0]
-        for (i in 1..nightTimes.size) {
-            timeIndex++
-            if (i == nightTimes.size) break
+        for (i in 0 until nightTimes.size) {
             if (now  >= last && now <= nightTimes[i]) {
-                return timeIndex - 1
+                return i + sunriseTimes.size + dayTimes.size + sunsetTimes.size - 1
             }
             last = nightTimes[i]
         }

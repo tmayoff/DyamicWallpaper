@@ -58,8 +58,6 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
 
         private var fetchListener: FetchListener = object : FetchListener {
             override fun onQueued(download: Download, waitingOnNetwork: Boolean) {
-                progressBar.visibility = View.VISIBLE
-                progressBar.progress = download.progress
             }
 
             override fun onCompleted(download: Download) {
@@ -97,6 +95,8 @@ class DownloadsViewAdapter(var tabDownloadWallpaper: TabDownloadWallpaper, var c
 
         private var downloadClickListener = View.OnClickListener {
             cardView.setOnClickListener(null)
+            progressBar.visibility = View.VISIBLE
+            progressBar.progress = 0
 
             GlobalScope.launch {
                 val themesDir = File(context.filesDir.absolutePath + context.getString(R.string.themes_relative_path))

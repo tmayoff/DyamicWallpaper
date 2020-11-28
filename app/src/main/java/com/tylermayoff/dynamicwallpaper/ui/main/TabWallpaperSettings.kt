@@ -81,6 +81,7 @@ class TabWallpaperSettings : UpdateableFragment () {
                 val sunriseTime = LocalTime.of(hourOfDay, minute)
                 appSettings.sunriseTime = sunriseTime
                 buttonSetSunrise.text = sunriseTime.toString()
+                update()
             }, if (appSettings.sunriseTime != null) appSettings.sunriseTime!!.hour else 0,
                     if (appSettings.sunriseTime != null) appSettings.sunriseTime!!.minute else 0, false).show()
         }
@@ -89,6 +90,7 @@ class TabWallpaperSettings : UpdateableFragment () {
                 val sunsetTime = LocalTime.of(hourOfDay, minute)
                 appSettings.sunsetTime = sunsetTime
                 buttonSetSunset.text = sunsetTime.toString()
+                update()
             }, if (appSettings.sunsetTime != null) appSettings.sunsetTime!!.hour else 0,
                     if (appSettings.sunsetTime != null) appSettings.sunsetTime!!.minute else 0, false).show()
         }
