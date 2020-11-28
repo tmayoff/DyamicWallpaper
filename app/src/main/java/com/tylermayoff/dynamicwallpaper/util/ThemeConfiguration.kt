@@ -11,7 +11,9 @@ import java.io.File
 import java.io.FileFilter
 import java.nio.file.Files
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import java.util.*
+import kotlin.math.abs
 
 class ThemeConfiguration() {
 
@@ -34,7 +36,9 @@ class ThemeConfiguration() {
     var useSunsetSunrise : Boolean = false
     lateinit var themeConfig : ThemeConfig
 
-    constructor(context: Context, themeName : String) : this() {
+    constructor(context: Context, themeName : String, useSun: Boolean, sunrise: LocalTime?, sunset: LocalTime?) : this() {
+        useSunsetSunrise = useSun
+
         val themeDir = File(context.filesDir.absolutePath + "/themes/" + themeName)
 
         val imageFiles : Array<File> = themeDir.listFiles(imageFilter) ?: return
@@ -45,11 +49,6 @@ class ThemeConfiguration() {
             val b : Bitmap = BitmapFactory.decodeFile(image.absolutePath)
             images.add(b)
         }
-
-        val appSettings = AppSettings.getInstance(context)
-        useSunsetSunrise = appSettings.useSunsetSunrise
-        if (appSettings.sunsetTime == null || appSettings.sunriseTime == null)
-            useSunsetSunrise = false
 
         // Get theme.json configuration
         val configFile : Array<File>? = themeDir.listFiles(jsonFilter)
@@ -62,7 +61,7 @@ class ThemeConfiguration() {
                 // Day times
                 val sunsetSunriseLength = 10
 
-                val dayLength: Int = ((appSettings.sunsetTime!!.timeInMillis - appSettings.sunriseTime!!.timeInMillis).toInt() / 1000 / 60) - sunsetSunriseLength
+                val dayLength: Int =  abs(ChronoUnit.MINUTES.between(sunset, sunrise).toInt() - sunsetSunriseLength)
                 val nightLength: Int = (24 * 60) - dayLength - sunsetSunriseLength
 
                 val dayIntervals = dayLength / themeConfig.dayImageList.size
@@ -71,30 +70,28 @@ class ThemeConfiguration() {
                 val sunsetIntervals = sunsetSunriseLength / themeConfig.sunsetImageList.size
 
                 // Sunrise
-                var startCal: Calendar = appSettings.sunriseTime!!.clone() as Calendar
-                var startTime = LocalTime.of(startCal.get(Calendar.HOUR_OF_DAY), Calendar.MINUTE)
+                var startTime = sunrise
                 for (i in themeConfig.sunriseImageList) {
-                    sunriseTimes.add(startTime)
+                    sunriseTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(sunriseIntervals.toLong())
                 }
 
                 // Times day
                 for (i in themeConfig.dayImageList) {
-                    dayTimes.add(startTime)
+                    dayTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(dayIntervals.toLong())
                 }
 
                 // Sunset
-                startCal = appSettings.sunsetTime!!.clone() as Calendar
-                startTime = LocalTime.of(startCal.get(Calendar.HOUR_OF_DAY), Calendar.MINUTE)
+                startTime = sunset
                 for (i in themeConfig.sunsetImageList) {
-                    sunsetTimes.add(startTime)
+                    sunsetTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(sunsetIntervals.toLong())
                 }
 
                 // Night
                 for (i in themeConfig.nightImageList) {
-                    nightTimes.add(startTime)
+                    nightTimes.add(startTime!!)
                     startTime = startTime.plusMinutes(nightIntervals.toLong())
                 }
             }

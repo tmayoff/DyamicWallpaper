@@ -12,6 +12,7 @@ import java.io.File
 import java.io.FileFilter
 import java.io.IOException
 import java.nio.file.Files
+import java.time.LocalTime
 import java.util.*
 
 class AppSettings(val context: Context)  {
@@ -20,24 +21,27 @@ class AppSettings(val context: Context)  {
     var editor: SharedPreferences.Editor = sharedPreferences.edit()
 
     // App Settings
+    var themeConfig: ThemeConfiguration? = null
+
     var activeTheme: String = ""
     set(value) {
         field = value
         editor.putString(context.getString(R.string.preferences_active_theme), activeTheme)
         editor.apply()
+        themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
     }
 
-    var sunsetTime: Calendar? = null
+    var sunsetTime: LocalTime? = null
     set(value) {
-        field = value?.clone() as Calendar
-        editor.putLong(context.getString(R.string.preferences_sunset_time), value.timeInMillis)
+        field = value
+        editor.putString(context.getString(R.string.preferences_sunset_time), value.toString())
         editor.apply()
     }
 
-    var sunriseTime: Calendar? = null
+    var sunriseTime: LocalTime? = null
     set(value) {
-        field = value?.clone() as Calendar
-        editor.putLong(context.getString(R.string.preferences_sunrise_time), value.timeInMillis)
+        field = value
+        editor.putString(context.getString(R.string.preferences_sunrise_time), value.toString())
         editor.apply()
     }
 
@@ -56,20 +60,15 @@ class AppSettings(val context: Context)  {
         // Sunset / Sunrise
         useSunsetSunrise = sharedPreferences.getBoolean(context.getString(R.string.preferences_use_sunset_sunrise), false)
 
-        var timeInMilli: Long = sharedPreferences.getLong(context.getString(R.string.preferences_sunrise_time), -1)
-        val tmpCalendar = Calendar.getInstance()
+        val sunriseText = sharedPreferences.getString(context.getString(R.string.preferences_sunrise_time), "")
+        val sunsetText = sharedPreferences.getString(context.getString(R.string.preferences_sunset_time), "")
+        if (sunriseText!!.isNotBlank())
+            sunriseTime = LocalTime.parse(sunriseText)
+        if (sunsetText!!.isNotBlank())
+            sunsetTime = LocalTime.parse(sunsetText)
 
-        // Sunrise Time
-        if (timeInMilli != 0L) {
-            tmpCalendar.timeInMillis = timeInMilli
-            sunriseTime = tmpCalendar.clone() as Calendar
-        }
-
-        // Sunset Time
-        timeInMilli = sharedPreferences.getLong(context.getString(R.string.preferences_sunset_time), -1)
-        if (timeInMilli != 0L) {
-            tmpCalendar.timeInMillis = timeInMilli
-            sunsetTime = tmpCalendar.clone() as Calendar
+        if (activeTheme.isNotBlank()) {
+            themeConfig = ThemeConfiguration(context, activeTheme, useSunsetSunrise, sunriseTime, sunsetTime)
         }
     }
 

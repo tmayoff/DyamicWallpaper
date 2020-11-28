@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
+import com.tylermayoff.dynamicwallpaper.util.AppSettings
 import com.tylermayoff.dynamicwallpaper.util.ThemeConfiguration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -41,6 +42,7 @@ class DynamicWallpaperService : WallpaperService() {
     inner class DynamicWallpaperEngine(private val context: Context) : WallpaperService.Engine() {
 
         private var sharedPreferences : SharedPreferences = getSharedPreferences(context.getString(R.string.preferences_file_key), Context.MODE_PRIVATE)
+        private var appSettings = AppSettings.getInstance(context)
 
         private val show : Runnable = Runnable { show() }
         private val changeImage : Runnable = Runnable { changeImage() }
@@ -48,7 +50,6 @@ class DynamicWallpaperService : WallpaperService() {
         private val alarmManager : AlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         // Theme Specifics
-        private var themeConfig: ThemeConfiguration
         private var activeThemeName : String
         private var currentImageIndex : Int = 0
 
@@ -72,16 +73,15 @@ class DynamicWallpaperService : WallpaperService() {
 
             if (activeThemeName.isEmpty()) {
                 // TODO Redirect to activity
-            }
 
-            themeConfig = ThemeConfiguration(context, activeThemeName)
+            }
 
             // Setup alarm
             val intent = Intent(context, DynamicWallpaperEngine::class.java)
             intent.action = "NEXT_IMG"
             val pendingIntent : PendingIntent = PendingIntent.getService(context, 0, intent, 0)
 
-            val nextAlarm = LocalDateTime.of(LocalDate.now(), themeConfig.getNextChangeTime())
+            val nextAlarm = LocalDateTime.of(LocalDate.now(), appSettings.themeConfig!!.getNextChangeTime())
             alarmManager.set(AlarmManager.RTC, nextAlarm.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), pendingIntent)
 
             handler.post(changeImage)
@@ -108,7 +108,7 @@ class DynamicWallpaperService : WallpaperService() {
 
         fun nextImage () {
             currentImageIndex++
-            if (currentImageIndex >= themeConfig.images.size)
+            if (currentImageIndex >= appSettings.themeConfig!!.images.size)
                 currentImageIndex = 0
 
             currentAlpha = 0
@@ -118,7 +118,7 @@ class DynamicWallpaperService : WallpaperService() {
             intent.action = "NEXT_IMG"
             val pendingIntent : PendingIntent = PendingIntent.getService(context, 0, intent, 0)
 
-            val nextAlarm = LocalDateTime.of(LocalDate.now(), themeConfig.getNextChangeTime())
+            val nextAlarm = LocalDateTime.of(LocalDate.now(), appSettings.themeConfig!!.getNextChangeTime())
             alarmManager.set(AlarmManager.RTC, nextAlarm.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), pendingIntent)
         }
 
@@ -128,7 +128,7 @@ class DynamicWallpaperService : WallpaperService() {
             try {
                 canvas = surfaceHolder.lockCanvas()
                 if (canvas != null) {
-                    val img = themeConfig.getCurrentBitmap()
+                    val img = appSettings.themeConfig!!.getCurrentBitmap()
                     val originalHeight = img.height
                     val originalWidth = img.width
 
@@ -154,7 +154,7 @@ class DynamicWallpaperService : WallpaperService() {
             try {
                 canvas = surfaceHolder.lockCanvas()
                 if (canvas != null) {
-                    val img = themeConfig.getCurrentBitmap()
+                    val img = appSettings.themeConfig!!.getCurrentBitmap()
                     val originalHeight = img.height
                     val originalWidth = img.width
 
